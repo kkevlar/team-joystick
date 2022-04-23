@@ -4,15 +4,15 @@ mod joystick;
 mod serial;
 
 fn main() -> Result<(), Box<dyn error::Error>> {
-    let args: Vec<_> = env::args().collect();
-    let port = if args.len() > 1 {
-        args[1].clone()
-    } else {
-        "/dev/ttyUSB1".to_owned()
-    };
+    // let args: Vec<_> = env::args().collect();
+    // let port = if args.len() > 1 {
+    //     args[1].clone()
+    // } else {
+    //     "/dev/ttyUSB1".to_owned()
+    // };
 
-    println!("Connecting to serial port at {}", port);
-    let mut serial = serial::SerialConnection::new(&port.into(), 115200)?;
+    // println!("Connecting to serial port at {}", port);
+    // let mut serial = serial::SerialConnection::new(&port.into(), 115200)?;
 
     let joystick = joystick::Joystick::new()?;
 
@@ -22,15 +22,8 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     );
 
     loop {
-        let button_state = serial.read_button_state()?;
-
-        for (i, &pressed) in button_state.pressed.iter().enumerate() {
-            joystick.button_press(button_map(i), pressed)?;
-        }
-
-        for (i, &value) in button_state.joysticks.iter().enumerate() {
-            joystick.move_axis(axis_map(i), value as i32 - 512)?;
-        }
+        joystick.button_press(joystick::Button::LeftNorth, true)?;
+        joystick.button_press(joystick::Button::RightSouth, true)?;
 
         joystick.synchronise()?;
     }
