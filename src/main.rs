@@ -97,7 +97,16 @@ fn sdljoysticktime(
     let joy_vecs = {
         let mut joy_vecs = vec![Vec::new(), Vec::new()];
         let mut player_index = 0;
+        let mut did_mayflash = false;
         for i in 0..num {
+            if joystick_subsystem.name_for_index(i).unwrap().contains("MAYFLASH")
+            {
+                if did_mayflash
+                {continue;}
+                else {
+                   did_mayflash = true; 
+                }
+            }
             let joy = joystick_subsystem.open(i)?;
             joy_vecs[player_index].push(joy);
             player_index += 1;
