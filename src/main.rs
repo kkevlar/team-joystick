@@ -48,18 +48,22 @@ fn snes_axisval_to_namedval(id: u32, val: i16) -> (NamedAxis, f32) {
         _ => unreachable!(),
     }
 }
-fn snes_button_to_named(id: u32) -> NamedButton {
+
+#[derive(Debug)]
+struct UnmappedError;
+
+fn snes_button_to_named(id: u32) -> Result<NamedButton, UnmappedError> {
     use NamedButton::*;
     match id {
-        0 => X,
-        1 => A,
-        2 => B,
-        3 => Y,
-        9 => Start,
-        8 => Select,
-        4 => L,
-        5 => R,
-        _ => unreachable!(),
+        0 => Ok(X),
+        1 => Ok(A),
+        2 => Ok(B),
+        3 => Ok(Y),
+        9 => Ok(Start),
+        8 => Ok(Select),
+        4 => Ok(L),
+        5 => Ok(R),
+        _ => Err(UnmappedError {}),
     }
 }
 
@@ -122,6 +126,24 @@ fn sdljoysticktime(
             )?;
 
             out_joystick.synchronise()?;
+        }
+        for i in 0..joy_vec[0].num_buttons() {
+            match snes_button_to_named(i) {
+                Ok(namedbutton) => out_joystick.button_press(
+                    match namedbutton {
+                        NamedButton::X => joystick::Button::RightNorth,
+                        NamedButton::A => joystick::Button::RightEast,
+                        NamedButton::B => joystick::Button::RightSouth,
+                        NamedButton::Y => joystick::Button::RightWest,
+                        NamedButton::L => joystick::Button::L1,
+                        NamedButton::R => joystick::Button::R1,
+                        NamedButton::Start => joystick::Button::RightSpecial,
+                        NamedButton::Select => joystick::Button::LeftSpecial,
+                    },
+                    joy_vec[0].button(i)?,
+                )?,
+                Err(_) => (),
+            }
         }
     }
 
