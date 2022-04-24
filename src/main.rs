@@ -1,5 +1,9 @@
 use std::error;
 
+use sdl2::sys::SDL_INIT_JOYSTICK;
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
+
 mod joystick;
 mod serial;
 
@@ -16,7 +20,7 @@ impl std::fmt::Display for UserError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, EnumIter)]
 enum NamedButton {
     A,
     B,
@@ -28,42 +32,34 @@ enum NamedButton {
     Start,
 }
 
-#[derive(Debug)]
+#[derive(Debug, EnumIter)]
 enum NamedAxis {
     Xright,
     Yup,
 }
 
-fn snes_axisval_to_namedval(id: u32, val: i16) -> (NamedAxis, f32) {
+fn snes_namedaxis_to_id_and_scalar(a: &NamedAxis) -> (u32, f32) {
     use NamedAxis::*;
-    match id {
-        0 => (Xright, {
-            let val = val as f32;
-            val / 32767.0
-        }),
-        1 => (Yup, {
-            let val = val as f32;
-            val / -32767.0
-        }),
-        _ => unreachable!(),
+    match a {
+        Xright => (0, 32767.0),
+        Yright => (1, -32767.0),
     }
 }
 
 #[derive(Debug)]
 struct UnmappedError;
 
-fn snes_button_to_named(id: u32) -> Result<NamedButton, UnmappedError> {
+fn snes_namedbutton_to_id(b: &NamedButton) -> u32 {
     use NamedButton::*;
-    match id {
-        0 => Ok(X),
-        1 => Ok(A),
-        2 => Ok(B),
-        3 => Ok(Y),
-        9 => Ok(Start),
-        8 => Ok(Select),
-        4 => Ok(L),
-        5 => Ok(R),
-        _ => Err(UnmappedError {}),
+    match b {
+        X => 0,
+        A => 1,
+        B => 2,
+        Y => 3,
+        Start => 9,
+        Select => 8,
+        L => 4,
+        R => 5,
     }
 }
 
@@ -98,39 +94,58 @@ fn sdljoysticktime(
         println!("\t{0} --> Name: {1}", i, name);
     }
 
-    let joy_vec: Result<Vec<sdl2::joystick::Joystick>, sdl2::IntegerOrSdlError> = (0..num)
-        .into_iter()
-        .map(|n| joystick_subsystem.open(n))
-        .collect();
-    let joy_vec = joy_vec?;
-    let out_joystick = joystick::Joystick::new("BustersDirtySecret".into())?;
+    let joy_vecs = {
+        let mut joy_vecs = vec![Vec::new(), Vec::new()];
+        let mut player_index = 0;
+        for i in 0..num {
+            let joy = joystick_subsystem.open(i)?;
+            joy_vecs[player_index].push(joy);
+            player_index += 1;
+            player_index %= joy_vecs.len();
+        }
+        joy_vecs
+    };
+
+    let out_p1 = joystick::Joystick::new("BustersDirtySecret".into())?;
+    let out_p2 = joystick::Joystick::new("BustersDirtySecretSqueakwel".into())?;
+    let out_joysticks = [out_p1, out_p2];
 
     loop {
         joystick_subsystem.update();
-        for i in 0..2 {
-            let (axis, value) = snes_axisval_to_namedval(i, joy_vec[0].axis(i)?);
+        for player_index in 0..out_joysticks.len() {
+            let out_joystick = &out_joysticks[player_index];
+            let input_joystick_vector = &joy_vecs[player_index];
 
-            out_joystick.move_axis(
-                {
-                    use joystick::Axis::*;
-                    use NamedAxis::*;
-                    match axis {
-                        Xright => X,
-                        Yup => Y,
-                    }
-                },
-                {
-                    let value = value * 512.0;
-                    value.trunc() as i32
-                },
-            )?;
+            for named_axis in NamedAxis::iter() {
+                let (id, scalar_map) = snes_namedaxis_to_id_and_scalar(&named_axis);
 
-            out_joystick.synchronise()?;
-        }
-        for i in 0..joy_vec[0].num_buttons() {
-            match snes_button_to_named(i) {
-                Ok(namedbutton) => out_joystick.button_press(
-                    match namedbutton {
+                out_joystick.move_axis(
+                    {
+                        use joystick::Axis::*;
+                        use NamedAxis::*;
+                        match named_axis {
+                            Xright => X,
+                            Yup => Y,
+                        }
+                    },
+                    {
+                        let sum: f32 = input_joystick_vector
+                            .iter()
+                            .map(|ijoy| ((ijoy.axis(id).unwrap() as f32) / scalar_map))
+                            .sum();
+                        let avg: f32 = sum / (input_joystick_vector.len() as f32);
+                        let value = avg * 512.0;
+                        value.trunc() as i32
+                    },
+                )?;
+            }
+            for named_button in NamedButton::iter() {
+                let id = snes_namedbutton_to_id(&named_button);
+                let is_pressed = input_joystick_vector
+                    .iter()
+                    .all(|ijoy| ijoy.button(id).unwrap());
+                out_joystick.button_press(
+                    match named_button {
                         NamedButton::X => joystick::Button::RightNorth,
                         NamedButton::A => joystick::Button::RightEast,
                         NamedButton::B => joystick::Button::RightSouth,
@@ -140,71 +155,72 @@ fn sdljoysticktime(
                         NamedButton::Start => joystick::Button::RightSpecial,
                         NamedButton::Select => joystick::Button::LeftSpecial,
                     },
-                    joy_vec[0].button(i)?,
-                )?,
-                Err(_) => (),
+                    is_pressed,
+                )?;
             }
+            out_joystick.synchronise()?;
         }
+
     }
 
-    loop {
-        joystick_subsystem.update();
-        for (js_index, js) in joy_vec.iter().enumerate() {
-            for button_index in 0..js.num_buttons() {
-                if js.button(button_index)? {
-                    println!("Pressed! Controller {}, button {}", js_index, button_index);
-                }
-            }
-        }
-    }
+    // loop {
+    //     joystick_subsystem.update();
+    //     for (js_index, js) in joy_vec.iter().enumerate() {
+    //         for button_index in 0..js.num_buttons() {
+    //             if js.button(button_index)? {
+    //                 println!("Pressed! Controller {}, button {}", js_index, button_index);
+    //             }
+    //         }
+    //     }
+    // }
 
-    // let js = joystick_subsystem.open(0)?;
-    return Ok(());
+    // // let js = joystick_subsystem.open(0)?;
+    // return Ok(());
 
-    let joystick = joystick::Joystick::new("BustersDirtySecret".into())?;
+    // let joystick = joystick::Joystick::new("BustersDirtySecret".into())?;
 
-    println!(
-        "Created joystick with device path {}",
-        joystick.device_path()?.to_string_lossy()
-    );
+    // println!(
+    //     "Created joystick with device path {}",
+    //     joystick.device_path()?.to_string_lossy()
+    // );
 
-    loop {
-        joystick.button_press(joystick::Button::LeftNorth, true)?;
-        joystick.button_press(joystick::Button::RightSouth, true)?;
-        joystick.move_axis(joystick::Axis::Y, 100)?;
+    // loop {
+    //     joystick.button_press(joystick::Button::LeftNorth, true)?;
+    //     joystick.button_press(joystick::Button::RightSouth, true)?;
+    //     joystick.move_axis(joystick::Axis::Y, 100)?;
 
-        joystick.synchronise()?;
-    }
+    //     joystick.synchronise()?;
+    // }
 }
 
-fn button_map(i: usize) -> joystick::Button {
-    use joystick::Button::*;
-    match i {
-        0 => LeftNorth,
-        1 => LeftWest,
-        2 => LeftEast,
-        3 => LeftSouth,
-        4 => LeftSpecial,
-        5 => RightSouth,
-        6 => RightSpecial,
-        7 => RightEast,
-        8 => RightWest,
-        9 => RightNorth,
-        10 => R2,
-        11 => R1,
-        12 => L2,
-        13 => L1,
-        _ => unreachable!(),
-    }
-}
+// fn button_map(i: usize) -> joystick::Button {
+//     use joystick::Button::*;
+//     match i {
+//         0 => LeftNorth,
+//         1 => LeftWest,
+//         2 => LeftEast,
+//         3 => LeftSouth,
+//         4 => LeftSpecial,
+//         5 => RightSouth,
+//         6 => RightSpecial,
+//         7 => RightEast,
+//         8 => RightWest,
+//         9 => RightNorth,
+//         10 => R2,
+//         11 => R1,
+//         12 => L2,
+//         13 => L1,
+//         _ => unreachable!(),
+//     }
+// }
 
-fn axis_map(i: usize) -> joystick::Axis {
-    use joystick::Axis::*;
-    match i {
-        0 => X,
-        1 => Y,
-        2 => RX,
-        3 => RY,
-        _ => unreachable!(),
-    }
-}
+// fn axis_map(i: usize) -> joystick::Axis {
+//     use joystick::Axis::*;
+//     match i {
+//         0 => X,
+//         1 => Y,
+//         2 => RX,
+//         3 => RY,
+//         _ => unreachable!(),
+//     }
+// }
