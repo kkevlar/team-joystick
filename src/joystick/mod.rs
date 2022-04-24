@@ -15,8 +15,8 @@ pub struct Joystick {
 }
 
 impl Joystick {
-    pub fn new() -> Result<Self, Error> {
-        let device = create_joystick_device()?;
+    pub fn new(name: String) -> Result<Self, Error> {
+        let device = create_joystick_device(name)?;
 
         Ok(Joystick { device })
     }
@@ -70,7 +70,7 @@ fn empty_event_time() -> input_linux::EventTime {
     input_linux::EventTime::new(0, 0)
 }
 
-fn create_joystick_device() -> Result<input_linux::UInputHandle<fs::File>, Error> {
+fn create_joystick_device(name: String) -> Result<input_linux::UInputHandle<fs::File>, Error> {
     let uinput_file = fs::File::create("/dev/uinput")?;
     let device = input_linux::UInputHandle::new(uinput_file);
 
@@ -100,7 +100,7 @@ fn create_joystick_device() -> Result<input_linux::UInputHandle<fs::File>, Error
 
     device.create(
         &input_id,
-        b"arduino-virtual-joystick",
+        name.as_bytes(),
         0,
         &Axis::all_axes()
             .map(|axis| input_linux::AbsoluteInfoSetup {
