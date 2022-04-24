@@ -95,7 +95,7 @@ fn sdljoysticktime(
     }
 
     let joy_vecs = {
-        let mut joy_vecs = vec![Vec::new(), Vec::new()];
+        let mut joy_vecs = vec![Vec::new() , /*vec2 */];
         let mut player_index = 0;
         let mut did_mayflash = false;
         for i in 0..num {
@@ -116,8 +116,9 @@ fn sdljoysticktime(
     };
 
     let out_p1 = joystick::Joystick::new("BustersDirtySecret".into())?;
-    let out_p2 = joystick::Joystick::new("BustersDirtySecretSqueakwel".into())?;
-    let out_joysticks = [out_p1, out_p2];
+    // let out_p2 = joystick::Joystick::new("BustersDirtySecretSqueakwel".into())?;
+    let out_joysticks = [out_p1];
+    // let out_joysticks = [out_p1, out_p2];
 
     loop {
         joystick_subsystem.update();
@@ -140,7 +141,10 @@ fn sdljoysticktime(
                     {
                         let sum: f32 = input_joystick_vector
                             .iter()
-                            .map(|ijoy| ((ijoy.axis(id).unwrap() as f32) / scalar_map))
+                            .map(|ijoy| {
+                               let oof =  ((ijoy.axis(id).unwrap() as f32) / scalar_map);
+                              oof.signum() * oof.powf(2.0).abs()
+                            })
                             .sum();
                         let avg: f32 = sum / (input_joystick_vector.len() as f32);
                         let value = avg * 512.0;
