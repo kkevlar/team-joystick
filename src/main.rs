@@ -1,6 +1,5 @@
 use std::error;
 
-use sdl2::sys::SDL_INIT_JOYSTICK;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -94,17 +93,21 @@ fn sdljoysticktime(
         println!("\t{0} --> Name: {1}", i, name);
     }
 
+    let number_of_output_controllers = 2;
+
     let joy_vecs = {
-        let mut joy_vecs = vec![Vec::new() , /*vec2 */];
+        let mut joy_vecs = vec![];
+        for _ in 0..number_of_output_controllers {
+            joy_vecs.push(Vec::new())
+        }
         let mut player_index = 0;
         let mut did_mayflash = false;
         for i in 0..num {
-            if joystick_subsystem.name_for_index(i).unwrap().contains("MAYFLASH")
-            {
-                if did_mayflash
-                {continue;}
-                else {
-                   did_mayflash = true; 
+            if joystick_subsystem.name_for_index(i)?.contains("MAYFLASH") {
+                if did_mayflash {
+                    continue;
+                } else {
+                    did_mayflash = true;
                 }
             }
             let joy = joystick_subsystem.open(i)?;
@@ -115,10 +118,15 @@ fn sdljoysticktime(
         joy_vecs
     };
 
-    let out_p1 = joystick::Joystick::new("BustersDirtySecret".into())?;
-    // let out_p2 = joystick::Joystick::new("BustersDirtySecretSqueakwel".into())?;
-    let out_joysticks = [out_p1];
-    // let out_joysticks = [out_p1, out_p2];
+    let out_joysticks = {
+        let mut out_joysticks = Vec::new();
+        for i in 0..number_of_output_controllers {
+            let name = format!("Buster{}", i);
+            let outjoy = joystick::Joystick::new(name)?;
+            out_joysticks.push(outjoy);
+        }
+        out_joysticks
+    };
 
     loop {
         joystick_subsystem.update();
@@ -142,12 +150,14 @@ fn sdljoysticktime(
                         let sum: f32 = input_joystick_vector
                             .iter()
                             .map(|ijoy| {
-                               let oof =  ((ijoy.axis(id).unwrap() as f32) / scalar_map);
-                              oof.signum() * oof.powf(2.0).abs()
+                                let oof = ijoy.axis(id).unwrap() as f32;
+                                let oof = oof / scalar_map;
+                                oof.signum() * oof.powf(1.0).abs()
                             })
                             .sum();
                         let avg: f32 = sum / (input_joystick_vector.len() as f32);
-                        let value = avg * 512.0;
+                        let powed = avg.signum() * avg.powf(2.0).abs();
+                        let value = powed * 512.0;
                         value.trunc() as i32
                     },
                 )?;
@@ -173,7 +183,6 @@ fn sdljoysticktime(
             }
             out_joystick.synchronise()?;
         }
-
     }
 
     // loop {
