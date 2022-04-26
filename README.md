@@ -8,7 +8,7 @@ The project is built off [Gwilym Kuiper's work](https://github.com/gwilymk/ardui
 
 ### Ubuntu
 
-`sudo apt install -y libudev-dev jstest-gtk`
+`sudo apt install -y libudev-dev jstest-gtk libsdl2-dev`
 
 ### Other 
 
