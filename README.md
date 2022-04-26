@@ -1,6 +1,5 @@
-# Rust Virtual Linux Joystick
+# Team Controller
 
-This repo allows you to emulate a joystick in Rust.
 The project is built off [Gwilym Kuiper's work](https://github.com/gwilymk/arduino-joystick).
 
 # Building
