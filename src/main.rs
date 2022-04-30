@@ -3,9 +3,6 @@ use std::error;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-mod joystick;
-mod serial;
-
 #[derive(Debug)]
 struct UserError {
     reason: String,
@@ -41,7 +38,7 @@ fn snes_namedaxis_to_id_and_scalar(a: &NamedAxis) -> (u32, f32) {
     use NamedAxis::*;
     match a {
         Xright => (0, 32767.0),
-        Yright => (1, -32767.0),
+        Yup => (1, -32767.0),
     }
 }
 
@@ -122,7 +119,7 @@ fn sdljoysticktime(
         let mut out_joysticks = Vec::new();
         for i in 0..number_of_output_controllers {
             let name = format!("Buster{}", i);
-            let outjoy = joystick::Joystick::new(name)?;
+            let outjoy = software_joystick::Joystick::new(name)?;
             out_joysticks.push(outjoy);
         }
         out_joysticks
@@ -139,7 +136,7 @@ fn sdljoysticktime(
 
                 out_joystick.move_axis(
                     {
-                        use joystick::Axis::*;
+                        use software_joystick::Axis::*;
                         use NamedAxis::*;
                         match named_axis {
                             Xright => X,
@@ -169,14 +166,14 @@ fn sdljoysticktime(
                     .all(|ijoy| ijoy.button(id).unwrap());
                 out_joystick.button_press(
                     match named_button {
-                        NamedButton::X => joystick::Button::RightNorth,
-                        NamedButton::A => joystick::Button::RightEast,
-                        NamedButton::B => joystick::Button::RightSouth,
-                        NamedButton::Y => joystick::Button::RightWest,
-                        NamedButton::L => joystick::Button::L1,
-                        NamedButton::R => joystick::Button::R1,
-                        NamedButton::Start => joystick::Button::RightSpecial,
-                        NamedButton::Select => joystick::Button::LeftSpecial,
+                        NamedButton::X => software_joystick::Button::RightNorth,
+                        NamedButton::A => software_joystick::Button::RightEast,
+                        NamedButton::B => software_joystick::Button::RightSouth,
+                        NamedButton::Y => software_joystick::Button::RightWest,
+                        NamedButton::L => software_joystick::Button::L1,
+                        NamedButton::R => software_joystick::Button::R1,
+                        NamedButton::Start => software_joystick::Button::RightSpecial,
+                        NamedButton::Select => software_joystick::Button::LeftSpecial,
                     },
                     is_pressed,
                 )?;
