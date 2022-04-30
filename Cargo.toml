@@ -11,4 +11,5 @@ sdl2 = "0.35.2"
 strum = "0.11.0"
 strum_macros = "0.11.0"
 software-joystick = { git = "https://github.com/kkevlar/software-joystick.git" }
+clap = { version = "3.0", features = ["derive"] }
 

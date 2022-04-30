@@ -59,7 +59,20 @@ fn snes_namedbutton_to_id(b: &NamedButton) -> u32 {
     }
 }
 
+use clap::Parser;
+
+/// Search for a pattern in a file and display the lines that contain it.
+#[derive(Parser)]
+struct Cli {
+    #[clap(short,long)]
+    output_controllers : u16,
+    #[clap(short,long)]
+    mayflash_controllers : u16,
+}
+
 fn main() -> Result<(), Box<dyn error::Error>> {
+    let args = Cli::parse();
+
     let my_sdl2 = sdl2::init().expect("Failed to Initialize SDL2. Install libsdl2-dev?");
     let joystick_subsystem = my_sdl2
         .joystick()
@@ -76,11 +89,13 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         0 => Err(Box::new(UserError {
             reason: "Cannot run this tool with 0 joysticks connected.".into(),
         })),
-        _ => sdljoysticktime(joystick_subsystem),
+        _ => sdljoysticktime(args, 
+            joystick_subsystem),
     }
 }
 
 fn sdljoysticktime(
+    args : Cli,
     joystick_subsystem: sdl2::JoystickSubsystem,
 ) -> Result<(), Box<dyn error::Error>> {
     let num = joystick_subsystem.num_joysticks().unwrap();
@@ -90,7 +105,7 @@ fn sdljoysticktime(
         println!("\t{0} --> Name: {1}", i, name);
     }
 
-    let number_of_output_controllers = 2;
+    let number_of_output_controllers = args.output_controllers;
 
     let joy_vecs = {
         let mut joy_vecs = vec![];
@@ -98,13 +113,13 @@ fn sdljoysticktime(
             joy_vecs.push(Vec::new())
         }
         let mut player_index = 0;
-        let mut did_mayflash = false;
+        let mut mayflash_count = 0;
         for i in 0..num {
             if joystick_subsystem.name_for_index(i)?.contains("MAYFLASH") {
-                if did_mayflash {
+                if mayflash_count > args.mayflash_controllers {
                     continue;
                 } else {
-                    did_mayflash = true;
+                    mayflash_count += 1;
                 }
             }
             let joy = joystick_subsystem.open(i)?;
