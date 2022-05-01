@@ -114,6 +114,7 @@ fn sdljoysticktime(
             joy_vecs.push(Vec::new())
         }
         let mut player_index = 0;
+        let mut bungus = 0;
         let mut mayflash_count = 0;
         for i in 0..num {
             if joystick_subsystem.name_for_index(i)?.contains("MAYFLASH") {
@@ -125,8 +126,11 @@ fn sdljoysticktime(
             }
             let joy = joystick_subsystem.open(i)?;
             joy_vecs[player_index].push(joy);
-            player_index += 1;
-            player_index %= joy_vecs.len();
+            bungus += 1;
+            if bungus == 12 {
+                player_index += 1;
+                bungus = 0;
+            }
         }
         joy_vecs
     };
@@ -169,7 +173,7 @@ fn sdljoysticktime(
                             })
                             .sum();
                         let avg: f32 = sum / (input_joystick_vector.len() as f32);
-                        let powed = avg.signum() * avg.powf(2.0).abs();
+                        let powed = avg.signum() * avg.powf(1.0).abs();
                         let value = powed * 512.0;
                         value.trunc() as i32
                     },
