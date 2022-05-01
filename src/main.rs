@@ -112,7 +112,7 @@ fn sdljoysticktime(
         for _ in 0..number_of_output_controllers {
             input_vec_of_vecs.push(Vec::new())
         }
-        let mut player_index = 0;
+        let mut output_joystick_index = 0;
         let mut num_assigned_to_current_output_index = 0;
         let mut mayflash_count = 0;
         for i in 0..num_inputs_detected {
@@ -127,14 +127,20 @@ fn sdljoysticktime(
                 }
             }
             let current_in_joy = sdl2_input_joystick_subsystem.open(i)?;
-            input_vec_of_vecs[player_index].push(current_in_joy);
+            input_vec_of_vecs[output_joystick_index].push(current_in_joy);
             num_assigned_to_current_output_index += 1;
-            if num_assigned_to_current_output_index >= {
-                let controllers_per_team =
-                    (num_inputs_detected as f32) / (number_of_output_controllers as f32);
-                controllers_per_team.ceil() as i32
+
+            // Test: should we move on and start assigning joysticks for the next output contorller?
+            if {
+                let currently_assigning_last_output =
+                    output_joystick_index >= (number_of_output_controllers - 1) as usize;
+                let minimim_joysticks_per_output_controller = ((num_inputs_detected as f32)
+                    / (number_of_output_controllers as f32))
+                    .floor() as i32;
+                num_assigned_to_current_output_index >= minimim_joysticks_per_output_controller
+                    && !currently_assigning_last_output
             } {
-                player_index += 1;
+                output_joystick_index += 1;
                 num_assigned_to_current_output_index = 0;
             }
         }
