@@ -42,9 +42,6 @@ fn snes_namedaxis_to_id_and_scalar(a: &NamedAxis) -> (u32, f32) {
     }
 }
 
-#[derive(Debug)]
-struct UnmappedError;
-
 fn snes_namedbutton_to_id(b: &NamedButton) -> u32 {
     use NamedButton::*;
     match b {
