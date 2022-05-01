@@ -69,6 +69,8 @@ struct Cli {
     #[clap(short, long)]
     mayflash_controllers: u16,
     #[clap(short, long)]
+    summed_axis_exponent: f32,
+    #[clap(short, long)]
     p1_controller1_buttons_always_down: bool,
 }
 
@@ -97,42 +99,49 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
 fn sdljoysticktime(
     args: Cli,
-    joystick_subsystem: sdl2::JoystickSubsystem,
+    sdl2_input_joystick_subsystem: sdl2::JoystickSubsystem,
 ) -> Result<(), Box<dyn error::Error>> {
-    let num = joystick_subsystem.num_joysticks().unwrap();
-    for i in 0..num {
-        let name = joystick_subsystem.name_for_index(i);
+    let num_inputs_detected = sdl2_input_joystick_subsystem.num_joysticks().unwrap();
+    for i in 0..num_inputs_detected {
+        let name = sdl2_input_joystick_subsystem.name_for_index(i);
         let name = name.unwrap_or("<FAILED TO GET NAME INFORMATION>".into());
         println!("\t{0} --> Name: {1}", i, name);
     }
 
     let number_of_output_controllers = args.output_controllers;
 
-    let joy_vecs = {
-        let mut joy_vecs = vec![];
+    let input_joysticks_vector_of_vectors = {
+        let mut input_vec_of_vecs = vec![];
         for _ in 0..number_of_output_controllers {
-            joy_vecs.push(Vec::new())
+            input_vec_of_vecs.push(Vec::new())
         }
         let mut player_index = 0;
-        let mut bungus = 0;
+        let mut num_assigned_to_current_output_index = 0;
         let mut mayflash_count = 0;
-        for i in 0..num {
-            if joystick_subsystem.name_for_index(i)?.contains("MAYFLASH") {
+        for i in 0..num_inputs_detected {
+            if sdl2_input_joystick_subsystem
+                .name_for_index(i)?
+                .contains("MAYFLASH")
+            {
                 if mayflash_count >= args.mayflash_controllers {
                     continue;
                 } else {
                     mayflash_count += 1;
                 }
             }
-            let joy = joystick_subsystem.open(i)?;
-            joy_vecs[player_index].push(joy);
-            bungus += 1;
-            if bungus == 12 {
+            let current_in_joy = sdl2_input_joystick_subsystem.open(i)?;
+            input_vec_of_vecs[player_index].push(current_in_joy);
+            num_assigned_to_current_output_index += 1;
+            if num_assigned_to_current_output_index >= {
+                let controllers_per_team =
+                    (num_inputs_detected as f32) / (number_of_output_controllers as f32);
+                controllers_per_team.ceil() as i32
+            } {
                 player_index += 1;
-                bungus = 0;
+                num_assigned_to_current_output_index = 0;
             }
         }
-        joy_vecs
+        input_vec_of_vecs
     };
 
     let out_joysticks = {
@@ -146,52 +155,42 @@ fn sdljoysticktime(
     };
 
     loop {
-        joystick_subsystem.update();
-        for player_index in 0..out_joysticks.len() {
-            let out_joystick = &out_joysticks[player_index];
-            let input_joystick_vector = &joy_vecs[player_index];
+        sdl2_input_joystick_subsystem.update();
+        for curr_out_joy_index in 0..out_joysticks.len() {
+            let out_joystick = &out_joysticks[curr_out_joy_index];
+            let input_joystick_vector = &input_joysticks_vector_of_vectors[curr_out_joy_index];
 
+            // Iterates over all of the axes we care about- each element of the NamedAxis enum
             for named_axis in NamedAxis::iter() {
                 let (id, scalar_map) = snes_namedaxis_to_id_and_scalar(&named_axis);
 
                 out_joystick.move_axis(
                     {
-                        use software_joystick::Axis::*;
-                        use NamedAxis::*;
                         match named_axis {
-                            Xright => X,
-                            Yup => Y,
+                            NamedAxis::Xright => software_joystick::Axis::X,
+                            NamedAxis::Yup => software_joystick::Axis::Y,
                         }
                     },
                     {
                         let sum: f32 = input_joystick_vector
                             .iter()
                             .map(|ijoy| {
-                                let oof = ijoy.axis(id).unwrap() as f32;
-                                let oof = oof / scalar_map;
-                                oof.signum() * oof.powf(1.0).abs()
+                                let raw_axis_value = ijoy.axis(id).unwrap() as f32;
+                                let normalized_axis_value = raw_axis_value / scalar_map;
+                                normalized_axis_value
                             })
                             .sum();
-                        let avg: f32 = sum / (input_joystick_vector.len() as f32);
-                        let powed = avg.signum() * avg.powf(1.0).abs();
-                        let value = powed * 512.0;
-                        value.trunc() as i32
+                        let average: f32 = sum / (input_joystick_vector.len() as f32);
+                        let exponent_scaled =
+                            average.signum() * average.abs().powf(args.summed_axis_exponent);
+                        let out_scaled = exponent_scaled * 512.0;
+                        out_scaled.trunc() as i32
                     },
                 )?;
             }
+
+            // Iterates over all the buttons we care about
             for named_button in NamedButton::iter() {
-                let id = snes_namedbutton_to_id(&named_button);
-                let in_joys_to_check = {
-                    if args.p1_controller1_buttons_always_down
-                        && player_index == 0
-                        && input_joystick_vector.len() > 1
-                    {
-                        &input_joystick_vector[1..]
-                    } else {
-                        &input_joystick_vector
-                    }
-                };
-                let is_pressed = in_joys_to_check.iter().all(|ijoy| ijoy.button(id).unwrap());
                 out_joystick.button_press(
                     match named_button {
                         NamedButton::X => software_joystick::Button::RightNorth,
@@ -203,7 +202,23 @@ fn sdljoysticktime(
                         NamedButton::Start => software_joystick::Button::RightSpecial,
                         NamedButton::Select => software_joystick::Button::LeftSpecial,
                     },
-                    is_pressed,
+                    {
+                        let sdl_inputs_button_id = snes_namedbutton_to_id(&named_button);
+                        let in_joys_to_check = {
+                            if args.p1_controller1_buttons_always_down
+                                && curr_out_joy_index == 0
+                                && input_joystick_vector.len() > 1
+                            {
+                                &input_joystick_vector[1..]
+                            } else {
+                                &input_joystick_vector
+                            }
+                        };
+                        let is_pressed = in_joys_to_check
+                            .iter()
+                            .all(|ijoy| ijoy.button(sdl_inputs_button_id).unwrap());
+                        is_pressed
+                    },
                 )?;
             }
             out_joystick.synchronise()?;
