@@ -64,10 +64,12 @@ use clap::Parser;
 /// Search for a pattern in a file and display the lines that contain it.
 #[derive(Parser)]
 struct Cli {
-    #[clap(short,long)]
-    output_controllers : u16,
-    #[clap(short,long)]
-    mayflash_controllers : u16,
+    #[clap(short, long)]
+    output_controllers: u16,
+    #[clap(short, long)]
+    mayflash_controllers: u16,
+    #[clap(short, long)]
+    p1_controller1_buttons_always_down: bool,
 }
 
 fn main() -> Result<(), Box<dyn error::Error>> {
@@ -89,13 +91,12 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         0 => Err(Box::new(UserError {
             reason: "Cannot run this tool with 0 joysticks connected.".into(),
         })),
-        _ => sdljoysticktime(args, 
-            joystick_subsystem),
+        _ => sdljoysticktime(args, joystick_subsystem),
     }
 }
 
 fn sdljoysticktime(
-    args : Cli,
+    args: Cli,
     joystick_subsystem: sdl2::JoystickSubsystem,
 ) -> Result<(), Box<dyn error::Error>> {
     let num = joystick_subsystem.num_joysticks().unwrap();
@@ -116,7 +117,7 @@ fn sdljoysticktime(
         let mut mayflash_count = 0;
         for i in 0..num {
             if joystick_subsystem.name_for_index(i)?.contains("MAYFLASH") {
-                if mayflash_count > args.mayflash_controllers {
+                if mayflash_count >= args.mayflash_controllers {
                     continue;
                 } else {
                     mayflash_count += 1;
@@ -176,9 +177,17 @@ fn sdljoysticktime(
             }
             for named_button in NamedButton::iter() {
                 let id = snes_namedbutton_to_id(&named_button);
-                let is_pressed = input_joystick_vector
-                    .iter()
-                    .all(|ijoy| ijoy.button(id).unwrap());
+                let in_joys_to_check = {
+                    if args.p1_controller1_buttons_always_down
+                        && player_index == 0
+                        && input_joystick_vector.len() > 1
+                    {
+                        &input_joystick_vector[1..]
+                    } else {
+                        &input_joystick_vector
+                    }
+                };
+                let is_pressed = in_joys_to_check.iter().all(|ijoy| ijoy.button(id).unwrap());
                 out_joystick.button_press(
                     match named_button {
                         NamedButton::X => software_joystick::Button::RightNorth,
