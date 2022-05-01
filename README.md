@@ -2,7 +2,9 @@
 
 ![badge](https://github.com/kkevlar/team-joystick/actions/workflows/build.yaml/badge.svg)
 
-The project is built off [Gwilym Kuiper's work](https://github.com/gwilymk/arduino-joystick).
+The project is built using [Gwilym Kuiper's virtual joystick tool](https://gwilym.dev/2021/02/virtual-joystick-on-linux/).
+
+
 
 # Building
 
