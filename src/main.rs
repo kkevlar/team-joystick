@@ -131,7 +131,18 @@ fn sdljoysticktime(
             num_assigned_to_current_output_index += 1;
 
             // Test: should we move on and start assigning joysticks for the next output contorller?
-            if { let currently_assigning_last_output = output_joystick_index >= (number_of_output_controllers - 1) as usize; let minimim_joysticks_per_output_controller = ((num_inputs_detected as f32) / (number_of_output_controllers as f32)) .floor() as i32; num_assigned_to_current_output_index >= minimim_joysticks_per_output_controller && !currently_assigning_last_output } { output_joystick_index += 1; num_assigned_to_current_output_index = 0; }
+            if {
+                let currently_assigning_last_output =
+                    output_joystick_index >= (number_of_output_controllers - 1) as usize;
+                let minimim_joysticks_per_output_controller = ((num_inputs_detected as f32)
+                    / (number_of_output_controllers as f32))
+                    .floor() as i32;
+                num_assigned_to_current_output_index >= minimim_joysticks_per_output_controller
+                    && !currently_assigning_last_output
+            } {
+                output_joystick_index += 1;
+                num_assigned_to_current_output_index = 0;
+            }
         }
         input_vec_of_vecs
     };
