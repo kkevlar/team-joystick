@@ -1,0 +1,66 @@
+image: "rust:1.64"
+
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/cargo
+  GIT_SUBMODULE_STRATEGY: normal
+
+before_script:
+  - apt-get update -yqq && apt-get install -yqq libudev-dev
+  # eframe dependencies for testing gui example
+  - apt-get install -yqq libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev
+  - rustc -Vv && cargo -Vv
+
+test:x86_64-unknown-linux-gnu:
+  stage: test
+  script:
+    - cargo test --verbose --all --features serde-serialize
+
+test:i686-unknown-linux-gnu:
+  stage: test
+  variables:
+    PKG_CONFIG_ALLOW_CROSS: "1"
+  before_script:
+    - dpkg --add-architecture i386
+    - apt-get update -yqq && apt-get install -yqq gcc-multilib libudev-dev libudev1:i386 libudev-dev:i386
+    - rustc -Vv && cargo -Vv
+    - rustup target add i686-unknown-linux-gnu
+  script:
+    - cargo test --verbose --target=i686-unknown-linux-gnu --lib --features serde-serialize
+
+build:wasm32-unknown-unknown:
+  image: "rust:1.64"
+  stage: test
+  before_script:
+    - rustc -Vv && cargo -Vv
+    - rustup target add wasm32-unknown-unknown
+  script:
+    - cargo test --no-run --target wasm32-unknown-unknown --all --features serde-serialize
+
+check:x86_64-apple-darwin:
+  stage: test
+  before_script:
+    - rustc -Vv && cargo -Vv
+    - rustup target add x86_64-apple-darwin
+  script:
+    - cargo check --target=x86_64-apple-darwin --verbose --all --features serde-serialize
+
+
+pages:
+  stage: deploy
+  script:
+  - cargo doc
+  # Remove libc from documentation to speed up deploy
+  - rm -r target/doc/libc
+  - rm -r target/doc/src/libc
+  - mkdir public
+  - mkdir public/img
+  - mv target/doc public
+  - mv controller.svg public/img/
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - public
+  only:
+    - master
+  except:
+    - schedules
