@@ -144,6 +144,10 @@ impl Ui {
             };
             self.draw_text(&draw_text_info);
             for (i, fb) in team.feedback.0.iter().enumerate() {
+                if fb.state == feedback_info::PressState::Unpressed {
+                    continue;
+                }
+
                 draw_text_info.text = &fb.button;
                 draw_text_info.sub = SubtextInfo::Button(i as i32);
                 self.draw_text(&draw_text_info);
@@ -156,6 +160,10 @@ impl Ui {
                 draw_text_info.sub = SubtextInfo::Myself;
                 self.draw_text(&draw_text_info);
                 for (i, fb) in player.feedback.0.iter().enumerate() {
+                    if fb.state == feedback_info::PressState::Unpressed {
+                        continue;
+                    }
+
                     draw_text_info.text = &fb.button;
                     draw_text_info.sub = SubtextInfo::Button(i as i32);
                     self.draw_text(&draw_text_info);

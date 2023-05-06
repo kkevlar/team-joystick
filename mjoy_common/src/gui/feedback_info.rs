@@ -7,7 +7,7 @@ pub struct Player {
     pub player_name: String,
     pub feedback: Presses,
 }
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum PressState {
     Pressed,
     Unpressed,

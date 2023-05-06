@@ -71,9 +71,11 @@ fn main() {
                             let i = i + 9 * outer as u32;
                             let mut by = i.to_be_bytes().to_vec();
                             let name = wh.object_name(&mut by, 13);
+                            let mut myfb = fb.clone();
+
                             gui::feedback_info::Player {
                                 player_name: name,
-                                feedback: gui::feedback_info::Presses(fb.clone()),
+                                feedback: gui::feedback_info::Presses(myfb),
                             }
                         })
                         .collect();
