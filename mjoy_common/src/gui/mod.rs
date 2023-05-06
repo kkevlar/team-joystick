@@ -55,6 +55,18 @@ impl<'a> RatioXY<'a> {
     }
 }
 
+enum TeamOrPlayer {
+    Team,
+    Player(usize),
+}
+
+struct DrawTextInfo<'a> {
+    team_index: usize,
+    team_or_player: TeamOrPlayer,
+    color_index: usize,
+    text: &'a str,
+}
+
 const TEXTURE_SIZE: f32 = 220f32;
 
 impl Ui {
@@ -114,40 +126,71 @@ impl Ui {
             assert!(self.teams[i] == team.team_name);
 
             for j in 0..5 {
-                let text: &str = if j > 0 {
-                    &team.players[j - 1].player_name
+                use TeamOrPlayer::*;
+                let (text, top): (&str, TeamOrPlayer) = if j > 0 {
+                    let player_index = j - 1;
+                    (
+                        &team.players[player_index].player_name,
+                        Player(player_index),
+                    )
                 } else {
-                    &team.team_name
+                    (&team.team_name, Team)
                 };
 
-                self.window.draw_text(
+                let draw_text_info = DrawTextInfo {
+                    team_index: i,
+                    team_or_player: top,
+                    color_index: color_idx,
                     text,
-                    &kiss3d::nalgebra::Point2::new(
-                        self.width_height.width as f32
-                            + (-300f32 * self.width_height.width as f32 / XRATIO_DENOM)
-                            + if j == 0 {
-                                0f32
-                            } else {
-                                70f32 * self.width_height.width as f32 / XRATIO_DENOM
-                            }
-                            + (self.logos_locations[i].x)
-                                * (1.90f32 + if j == 0 { 0f32 } else { 0.1f32 }),
-                        self.width_height.height as f32
-                            + (150f32 * self.width_height.height as f32) / YRATIO_DENOM
-                            + (self.logos_locations[i].y) * -2f32
-                            + (120f32 * j as f32 * self.width_height.height as f32) / YRATIO_DENOM,
-                    ),
-                    if j == 0 {
-                        (100.0 * self.width_height.width as f32) / XRATIO_DENOM
-                    } else {
-                        (90.0 * self.width_height.width as f32) / XRATIO_DENOM
-                    },
-                    &self.font,
-                    &self.colors.0[color_idx].color.0,
-                );
+                };
+
+                self.draw_text(&draw_text_info);
             }
         }
         self.window.render();
+    }
+
+    fn draw_text(&mut self, info: &DrawTextInfo) {
+        use TeamOrPlayer::*;
+
+        let xpos = self.width_height.width as f32
+            + (-250f32 * self.width_height.width as f32 / XRATIO_DENOM)
+            + match info.team_or_player {
+                Team => 0f32,
+                Player(_) => (50f32 * self.width_height.width as f32) / XRATIO_DENOM,
+            }
+            + (self.logos_locations[info.team_index].x)
+                * (1.95f32
+                    + match info.team_or_player {
+                        Team => 0f32,
+                        Player(_) => 0f32,
+                    });
+
+        let ypos = self.width_height.height as f32
+            + (150f32 * self.width_height.height as f32) / YRATIO_DENOM
+            + (self.logos_locations[info.team_index].y) * -2f32
+            + (120f32
+                * match info.team_or_player {
+                    Team => 0,
+                    Player(i) => i + 1,
+                } as f32
+                * self.width_height.height as f32)
+                / YRATIO_DENOM;
+
+        let size = (match info.team_or_player {
+            Team => 100,
+            Player(_) => 80,
+        } as f32
+            * self.width_height.width as f32)
+            / XRATIO_DENOM;
+
+        self.window.draw_text(
+            info.text,
+            &kiss3d::nalgebra::Point2::new(xpos, ypos),
+            size,
+            &self.font,
+            &self.colors.0[info.color_index as usize].color.0,
+        );
     }
 }
 
