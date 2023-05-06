@@ -55,9 +55,18 @@ impl<'a> RatioXY<'a> {
     }
 }
 
+enum SubtextInfo {
+    Myself,
+    Button(i32),
+}
+
+struct DrawPlayerInfo {
+    player_index: usize,
+}
+
 enum TeamOrPlayer {
     Team,
-    Player(usize),
+    Player(DrawPlayerInfo),
 }
 
 struct DrawTextInfo<'a> {
@@ -65,6 +74,7 @@ struct DrawTextInfo<'a> {
     team_or_player: TeamOrPlayer,
     color_index: usize,
     text: &'a str,
+    sub: SubtextInfo,
 }
 
 const TEXTURE_SIZE: f32 = 220f32;
@@ -126,25 +136,35 @@ impl Ui {
             assert!(self.teams[i] == team.team_name);
 
             for j in 0..5 {
-                use TeamOrPlayer::*;
-                let (text, top): (&str, TeamOrPlayer) = if j > 0 {
-                    let player_index = j - 1;
-                    (
-                        &team.players[player_index].player_name,
-                        Player(player_index),
-                    )
-                } else {
-                    (&team.team_name, Team)
-                };
+                for k in 0..5 {
+                    use TeamOrPlayer::*;
+                    let (text, top): (String, TeamOrPlayer) = if j > 0 {
+                        let player_index = j - 1;
 
-                let draw_text_info = DrawTextInfo {
-                    team_index: i,
-                    team_or_player: top,
-                    color_index: color_idx,
-                    text,
-                };
+                        (
+                            team.players[player_index].player_name.to_owned(),
+                            Player(DrawPlayerInfo { player_index }),
+                        )
+                    } else {
+                        (team.team_name.to_owned(), Team)
+                    };
 
-                self.draw_text(&draw_text_info);
+                    let (real_text, sub) = if k == 0 {
+                        (text, SubtextInfo::Myself)
+                    } else {
+                        (format!("{}", k), SubtextInfo::Button(k - 1))
+                    };
+
+                    let draw_text_info = DrawTextInfo {
+                        team_index: i,
+                        team_or_player: top,
+                        color_index: color_idx,
+                        text: &real_text,
+                        sub,
+                    };
+
+                    self.draw_text(&draw_text_info);
+                }
             }
         }
         self.window.render();
@@ -164,32 +184,61 @@ impl Ui {
                     + match info.team_or_player {
                         Team => 0f32,
                         Player(_) => 0f32,
-                    });
+                    })
+            + match info.sub {
+                SubtextInfo::Myself => 0f32,
+                SubtextInfo::Button(i) => i as f32 + 0.7f32,
+            } * (40f32 * self.width_height.width as f32)
+                / XRATIO_DENOM;
 
         let ypos = self.width_height.height as f32
             + (150f32 * self.width_height.height as f32) / YRATIO_DENOM
             + (self.logos_locations[info.team_index].y) * -2f32
-            + (120f32
+            + (63f32
                 * match info.team_or_player {
-                    Team => 0,
-                    Player(i) => i + 1,
-                } as f32
+                    Team => 0 as f32,
+                    Player(DrawPlayerInfo { player_index, .. }) => {
+                        (player_index as f32 * 1.8 as f32) + 1.8 as f32
+                    }
+                }
                 * self.width_height.height as f32)
+                / YRATIO_DENOM
+            + match info.sub {
+                SubtextInfo::Myself => 0,
+                SubtextInfo::Button(_) => 1,
+            } as f32
+                * (60f32 * self.width_height.height as f32)
                 / YRATIO_DENOM;
 
         let size = (match info.team_or_player {
-            Team => 100,
-            Player(_) => 80,
+            Team => 85,
+            Player(_) => 70,
         } as f32
+            * match info.sub {
+                SubtextInfo::Myself => 1f32,
+                SubtextInfo::Button(_) => 0.9f32,
+            }
             * self.width_height.width as f32)
             / XRATIO_DENOM;
+
+        let color = self.colors.0[info.color_index].color.0;
+        let color = color
+            * match info.sub {
+                SubtextInfo::Myself => 1f32,
+                SubtextInfo::Button(_) => 0.6f32,
+            };
+        let color = color
+            * match info.team_or_player {
+                Team => 1f32,
+                Player(_) => 0.9f32,
+            };
 
         self.window.draw_text(
             info.text,
             &kiss3d::nalgebra::Point2::new(xpos, ypos),
             size,
             &self.font,
-            &self.colors.0[info.color_index as usize].color.0,
+            &color,
         );
     }
 }
