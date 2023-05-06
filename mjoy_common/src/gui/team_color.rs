@@ -1,6 +1,6 @@
 use kiss3d::nalgebra::Point3;
 
-struct HintedColor {
+pub struct HintedColor {
     color: Color,
     hints: Vec<&'static str>,
 }
@@ -18,17 +18,17 @@ struct Score {
 #[derive(Clone, Debug)]
 pub struct Team<'a>(pub &'a str);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Color(pub Point3<f32>);
 
 #[derive(Debug)]
 pub struct ColoredTeam {
     pub team: String,
-    pub color: Point3<f32>,
+    pub color: Color,
 }
 
 #[derive(Debug)]
-pub ColoredTeams(pub Vec<ColoredTeam>);
+pub struct ColoredTeams(pub Vec<ColoredTeam>);
 
 fn calc_score_points(team: &Team, hc: &HintedColor) -> i32 {
     const START_POINTS: i32 = 100;
@@ -210,7 +210,7 @@ impl HintedColors {
             let (team_index, high_score) = high_score.unwrap();
             colored_teams.push(ColoredTeam {
                 team: teams_to_color[team_index].0.to_string(),
-                color: self.elements[high_score.index].color.0.clone(),
+                color: self.elements[high_score.index].color.clone(),
             });
             used_colors.push(high_score.index);
             teams_to_color.remove(team_index);
@@ -254,13 +254,13 @@ mod tests {
         let hc = HintedColors::new();
 
         let woof = hc.color_teams(&teams.as_slice());
-        for c in woof.iter() {
-            let index = team_names.iter().position(|tn| tn == &c.team.0).unwrap();
+        for c in woof.0.iter() {
+            let index = team_names.iter().position(|tn| tn == &c.team).unwrap();
             let answer = answers[index];
             if answer >= 0 {
                 let answer = answer as usize;
-                dbg!((answer, &hc.elements[answer].color, c.color));
-                assert!(close_enough(&hc.elements[answer].color, c.color));
+                dbg!((answer, &hc.elements[answer].color, c.color.0));
+                assert!(close_enough(&hc.elements[answer].color, &c.color));
             }
         }
     }

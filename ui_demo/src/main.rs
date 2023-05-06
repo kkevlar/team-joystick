@@ -45,7 +45,7 @@ fn main() {
         teams
     };
 
-    let mut gui = gui::Ui::new(&teams.as_slice());
+    let mut gui = gui::Ui::new(&teams.as_slice(), gui::WidthHeight::new(1920 / 2, 1080 / 2));
 
     let wh = mjoy_common::wordhash::Wordhash::new(seed, seed);
 

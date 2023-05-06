@@ -79,7 +79,7 @@ pub fn resize_and_focus_matching(match_regex: &Regex) -> Result<(), ResizeError>
 #[cfg(test)]
 
 mod tests {
-    use super::*;
+    //use super::*;
 
     //#[test]
     //fn wm_simple() -> Result<(), ResizeError> {
