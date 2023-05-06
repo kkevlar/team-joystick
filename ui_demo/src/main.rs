@@ -30,7 +30,7 @@ fn team_options() -> Vec<String> {
 fn main() {
     let team_options = team_options();
 
-    let seed = 13;
+    let seed = 14;
     let teams = {
         let mut teams = Vec::new();
         for i in 0..4 {
@@ -45,7 +45,7 @@ fn main() {
         teams
     };
 
-    let mut gui = gui::Ui::new(&teams.as_slice(), gui::WidthHeight::new(1920 / 2, 1080 / 2));
+    let mut gui = gui::Ui::new(&teams.as_slice(), gui::WidthHeight::new(1920, 1080));
 
     let wh = mjoy_common::wordhash::Wordhash::new(seed, seed);
 

@@ -104,17 +104,20 @@ impl Ui {
     }
 
     pub fn render(&mut self, feedback: &FeedbackInfo) {
-        let teams: Vec<team_color::Team> = self.teams.iter().map(|n| team_color::Team(n)).collect();
+        for (i, team) in feedback.teams.iter().enumerate() {
+            let color_idx = self
+                .colors
+                .0
+                .iter()
+                .position(|c| c.team == team.team_name)
+                .unwrap();
+            assert!(self.teams[i] == team.team_name);
 
-        for (_, c) in self.colors.0.iter().enumerate() {
-            let idx = self.teams.iter().position(|t| t == &c.team).unwrap();
-            //assert_eq!(feedback.teams[0].team_name, c.team.0);
-
-            for i in 0..5 {
-                let text = if i > 0 {
-                    &feedback.teams[idx].players[i - 1].player_name
+            for j in 0..5 {
+                let text: &str = if j > 0 {
+                    &team.players[j - 1].player_name
                 } else {
-                    &c.team
+                    &team.team_name
                 };
 
                 self.window.draw_text(
@@ -122,25 +125,25 @@ impl Ui {
                     &kiss3d::nalgebra::Point2::new(
                         self.width_height.width as f32
                             + (-300f32 * self.width_height.width as f32 / XRATIO_DENOM)
-                            + if i == 0 {
+                            + if j == 0 {
                                 0f32
                             } else {
-                                100f32 * self.width_height.width as f32 / XRATIO_DENOM
+                                70f32 * self.width_height.width as f32 / XRATIO_DENOM
                             }
-                            + (self.logos_locations[idx].x)
-                                * (1.90f32 + if i == 0 { 0f32 } else { 0.1f32 }),
+                            + (self.logos_locations[i].x)
+                                * (1.90f32 + if j == 0 { 0f32 } else { 0.1f32 }),
                         self.width_height.height as f32
                             + (150f32 * self.width_height.height as f32) / YRATIO_DENOM
-                            + (self.logos_locations[idx].y) * -2f32
-                            + (120f32 * i as f32 * self.width_height.height as f32) / YRATIO_DENOM,
+                            + (self.logos_locations[i].y) * -2f32
+                            + (120f32 * j as f32 * self.width_height.height as f32) / YRATIO_DENOM,
                     ),
-                    if i == 0 {
+                    if j == 0 {
                         (100.0 * self.width_height.width as f32) / XRATIO_DENOM
                     } else {
                         (90.0 * self.width_height.width as f32) / XRATIO_DENOM
                     },
                     &self.font,
-                    &c.color.0,
+                    &self.colors.0[color_idx].color.0,
                 );
             }
         }
