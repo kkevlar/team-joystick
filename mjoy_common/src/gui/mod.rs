@@ -87,7 +87,7 @@ impl Ui {
         window.set_light(Light::StickToCamera);
 
         let texture_size = RatioXY::new(TEXTURE_SIZE, TEXTURE_SIZE, &width_height);
-        let texture_position = RatioXY::new(845f32, 250f32, &width_height);
+        let texture_position = RatioXY::new(845f32, 260f32, &width_height);
         let texture_position_bonus = RatioXY::new(0f32, 150f32, &width_height);
 
         let mut logos: Vec<_> = Vec::new();
@@ -113,7 +113,7 @@ impl Ui {
             hc.color_teams(&teams.as_slice())
         };
 
-        let mut ui = Ui {
+        let ui = Ui {
             window,
             teams: teams.iter().map(|t| t.to_string()).collect(),
             logos,
@@ -135,34 +135,29 @@ impl Ui {
                 .unwrap();
             assert!(self.teams[i] == team.team_name);
 
-            for j in 0..5 {
-                for k in 0..5 {
-                    use TeamOrPlayer::*;
-                    let (text, top): (String, TeamOrPlayer) = if j > 0 {
-                        let player_index = j - 1;
+            let mut draw_text_info = DrawTextInfo {
+                team_index: i,
+                team_or_player: TeamOrPlayer::Team,
+                color_index: color_idx,
+                text: &team.team_name,
+                sub: SubtextInfo::Myself,
+            };
+            self.draw_text(&draw_text_info);
+            for (i, fb) in team.feedback.0.iter().enumerate() {
+                draw_text_info.text = &fb.button;
+                draw_text_info.sub = SubtextInfo::Button(i as i32);
+                self.draw_text(&draw_text_info);
+            }
 
-                        (
-                            team.players[player_index].player_name.to_owned(),
-                            Player(DrawPlayerInfo { player_index }),
-                        )
-                    } else {
-                        (team.team_name.to_owned(), Team)
-                    };
-
-                    let (real_text, sub) = if k == 0 {
-                        (text, SubtextInfo::Myself)
-                    } else {
-                        (format!("{}", k), SubtextInfo::Button(k - 1))
-                    };
-
-                    let draw_text_info = DrawTextInfo {
-                        team_index: i,
-                        team_or_player: top,
-                        color_index: color_idx,
-                        text: &real_text,
-                        sub,
-                    };
-
+            for (i, player) in team.players.iter().enumerate() {
+                draw_text_info.team_or_player =
+                    TeamOrPlayer::Player(DrawPlayerInfo { player_index: i });
+                draw_text_info.text = &player.player_name;
+                draw_text_info.sub = SubtextInfo::Myself;
+                self.draw_text(&draw_text_info);
+                for (i, fb) in player.feedback.0.iter().enumerate() {
+                    draw_text_info.text = &fb.button;
+                    draw_text_info.sub = SubtextInfo::Button(i as i32);
                     self.draw_text(&draw_text_info);
                 }
             }
@@ -192,13 +187,13 @@ impl Ui {
                 / XRATIO_DENOM;
 
         let ypos = self.width_height.height as f32
-            + (150f32 * self.width_height.height as f32) / YRATIO_DENOM
+            + (158f32 * self.width_height.height as f32) / YRATIO_DENOM
             + (self.logos_locations[info.team_index].y) * -2f32
             + (63f32
                 * match info.team_or_player {
                     Team => 0 as f32,
                     Player(DrawPlayerInfo { player_index, .. }) => {
-                        (player_index as f32 * 1.8 as f32) + 1.8 as f32
+                        (player_index as f32 * 1.8 as f32) + 1.9 as f32
                     }
                 }
                 * self.width_height.height as f32)

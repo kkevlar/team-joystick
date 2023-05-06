@@ -1,7 +1,4 @@
-use mjoy_common::gui::{
-    self,
-    feedback_info::{Buttons, SticksAnalog, SticksDigital},
-};
+use mjoy_common::gui::{self};
 use regex::Regex;
 use sha2::Digest;
 
@@ -49,6 +46,18 @@ fn main() {
 
     let wh = mjoy_common::wordhash::Wordhash::new(seed, seed);
 
+    let fb = {
+        let mut fb = Vec::new();
+
+        for thing in ["<", ">", "^", "v", "A", "B", "X", "Y", "t", "e"].iter() {
+            fb.push(gui::feedback_info::ButtonPress {
+                button: thing.to_string(),
+                state: gui::feedback_info::PressState::Pressed,
+            });
+        }
+        fb
+    };
+
     let fb = gui::feedback_info::FeedbackInfo {
         teams: teams
             .iter()
@@ -64,15 +73,13 @@ fn main() {
                             let name = wh.object_name(&mut by, 13);
                             gui::feedback_info::Player {
                                 player_name: name,
-                                button: gui::feedback_info::Buttons::default(),
-                                sticks: SticksDigital::default(),
+                                feedback: gui::feedback_info::Presses(fb.clone()),
                             }
                         })
                         .collect();
                     players
                 },
-                button: Buttons::default(),
-                sticks: SticksAnalog::default(),
+                feedback: gui::feedback_info::Presses(fb.clone()),
             })
             .collect(),
     };
