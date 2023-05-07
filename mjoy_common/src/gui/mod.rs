@@ -191,7 +191,7 @@ impl Ui {
             + match info.sub {
                 SubtextInfo::Myself => 0f32,
                 SubtextInfo::Button(i) => i as f32 + 0.7f32,
-            } * (40f32 * self.width_height.width as f32)
+            } * (35f32 * self.width_height.width as f32)
                 / XRATIO_DENOM;
 
         let ypos = self.width_height.height as f32

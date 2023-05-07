@@ -49,7 +49,7 @@ fn main() {
     let fb = {
         let mut fb = Vec::new();
 
-        for thing in ["<", ">", "^", "v", "A", "B", "X", "Y", "t", "e"].iter() {
+        for thing in ["<", ">", "^", "v", "A", "B", "X", "Y", "L", "R", "t", "e"].iter() {
             fb.push(gui::feedback_info::ButtonPress {
                 button: thing.to_string(),
                 state: gui::feedback_info::PressState::Pressed,
