@@ -1,4 +1,4 @@
-use mjoy_common::gui::{self};
+use mjoy_gui::gui;
 use regex::Regex;
 use sha2::Digest;
 
@@ -27,7 +27,7 @@ fn team_options() -> Vec<String> {
 fn main() {
     let team_options = team_options();
 
-    let seed = 14;
+    let seed = 15;
     let teams = {
         let mut teams = Vec::new();
         for i in 0..4 {
@@ -42,9 +42,9 @@ fn main() {
         teams
     };
 
-    let mut gui = gui::Ui::new(&teams.as_slice(), gui::WidthHeight::new(1920, 1080));
+    let mut gui = gui::Ui::new(&teams.as_slice(), gui::WidthHeight::new(800, 600));
 
-    let wh = mjoy_common::wordhash::Wordhash::new(seed, seed);
+    let wh = mjoy_gui::wordhash::Wordhash::new(seed, seed);
 
     let fb = {
         let mut fb = Vec::new();

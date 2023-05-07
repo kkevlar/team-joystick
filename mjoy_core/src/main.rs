@@ -1,9 +1,6 @@
-mod gui;
 mod injoy;
 mod joypaths;
-mod manipulate_emulator;
 mod outjoy;
-mod wordhash;
 
 use clap::Parser;
 use serde::{Deserialize, Serialize};
@@ -24,60 +21,6 @@ pub struct Config {
     number_of_multi_port_controllers_to_use: u32,
 }
 
-use std::collections::HashMap;
-
-use anyhow;
-
-fn team_name_logo(
-    words: &wordhash::Wordhash,
-    config: &Config,
-    team: &Vec<String>,
-) -> anyhow::Result<String> {
-    let team_bytes = {
-        let mut team_bytes = Vec::new();
-        for member in team {
-            team_bytes.extend_from_slice(member.as_bytes());
-        }
-        team_bytes
-    };
-    let word = words.team_name(team_bytes.as_slice());
-
-    use std::io::Write;
-    let logo_name = format!("images/{}.jpg", word);
-    //Test if the file exists
-    if std::path::Path::new(&logo_name).exists() {
-    } else {
-        let prompt = format!("Sports team logo for a team called the {}", word);
-        dbg!(prompt);
-        return Ok(word);
-
-        // Submit the prompt to deepai.org to generate a logo for the team, with grid size = 1
-        let mut res = reqwest::blocking::Client::new()
-            .post("https://api.deepai.org/api/logo-generator")
-            .header("Api-Key", "8979b9e6-9eb9-404c-a182-bb8d180a1a69")
-            .form(&[("text", prompt), ("grid_size", "1".to_string())])
-            .send()?;
-        dbg!(&res);
-
-        // Get the url of the generated image.
-        let url = res.json::<serde_json::Value>();
-        let url2 = url.unwrap();
-        let url3 = url2["output_url"]
-            .as_str()
-            .ok_or(anyhow::anyhow!("no url"))?;
-        dbg!(&url3);
-        // Download the image.
-        res = reqwest::blocking::Client::new().get(url3).send()?;
-
-        // Save the image to disk.
-        let mut file = std::fs::File::create(logo_name)?;
-        let it = &res.bytes()?;
-        let mut mit = &mut it.clone();
-        file.write_all(&mut mit)?;
-    }
-    Ok(word)
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 struct Team {
     name: String,
@@ -95,9 +38,7 @@ fn main() {
     let config = serde_json::from_str::<Config>(&std::fs::read_to_string(&args.config).unwrap())
         .expect("Failed to parse config file");
     dbg!(&config);
-    let words = wordhash::Wordhash::new(config.path_hash_salt, config.team_hash_salt);
-
-    gui::do_cubes();
+    let words = mjoy_gui::wordhash::Wordhash::new(config.path_hash_salt, config.team_hash_salt);
 
     // Read configuration file .json file
     let joy_paths = joypaths::repath_joys(&words, &config);
@@ -141,7 +82,8 @@ fn main() {
                 team.push(joy.common_name.clone());
                 minimal_path_index += 1;
             }
-            let team_name = team_name_logo(&words, &config, &team).unwrap();
+            // TODO team name
+            let team_name = format!("Team {}", team_index + 1);
             let team = Team {
                 name: team_name,
                 players: team,

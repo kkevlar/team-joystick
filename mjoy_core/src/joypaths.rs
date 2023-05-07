@@ -1,4 +1,4 @@
-use crate::wordhash::Wordhash;
+use mjoy_gui::wordhash::Wordhash;
 use std::collections::HashMap;
 
 #[derive(Debug)]

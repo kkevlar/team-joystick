@@ -1,5 +1,5 @@
 [package]
-name = "ui_demo"
+name = "mjoy_gui"
 version = "0.3.1"
 authors = ["Kevin Kellar <kellar.kevin@gmail.com>"]
 edition = "2021"
@@ -7,7 +7,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mjoy_gui = {path = "../mjoy_gui"}
-regex = "1.8.1"
 sha2 = "0.10.6"
+kiss3d = "0.35.0"
+regex = "1.5.4"
+thiserror = "1.0.30"
 
