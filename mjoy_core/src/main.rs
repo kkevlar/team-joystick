@@ -82,8 +82,16 @@ fn main() {
                 team.push(joy.common_name.clone());
                 minimal_path_index += 1;
             }
-            // TODO team name
-            let team_name = format!("Team {}", team_index + 1);
+
+            let mut concat = String::new();
+            for player in team.iter() {
+                concat.push_str(player);
+                concat.push_str(".");
+            }
+
+            let team_name =
+                mjoy_gui::diskteamhash::team_hash(config.team_hash_salt, concat.as_bytes());
+
             let team = Team {
                 name: team_name,
                 players: team,
@@ -150,8 +158,51 @@ fn main() {
     let mut joy_lookup: joypaths::EventPathLookup =
         joypaths::repath_joys(&words, &config).unwrap().into();
 
-    use mjoy_gui::gui::feedback_info::FeedbackInfo;
-    //let feedback_info = FeedbackInfo::new(&frozen);
+    let feedback = {
+        let mut fb = Vec::new();
+
+        for thing in ["<", ">", "^", "v", "A", "B", "X", "Y", "L", "R", "t", "e"].iter() {
+            fb.push(mjoy_gui::gui::feedback_info::ButtonPress {
+                button: thing.to_string(),
+                state: mjoy_gui::gui::feedback_info::PressState::Unpressed,
+            });
+        }
+        fb
+    };
+    let feedback = mjoy_gui::gui::feedback_info::Presses(feedback);
+
+    let mut fbteams = Vec::new();
+    for team in frozen.teams.iter() {
+        let mut fbplayers = Vec::new();
+        for player in team.players.iter() {
+            let fbplayer = mjoy_gui::gui::feedback_info::Player {
+                player_name: player.clone(),
+                feedback: feedback.clone(),
+            };
+            fbplayers.push(fbplayer);
+        }
+
+        let fb_team = mjoy_gui::gui::feedback_info::Team {
+            team_name: &team.name,
+            players: fbplayers,
+            feedback: feedback.clone(),
+        };
+
+        fbteams.push(fb_team);
+    }
+    let mut fbinfo = mjoy_gui::gui::feedback_info::FeedbackInfo { teams: fbteams };
+
+    let mut gui_teams = Vec::new();
+    use mjoy_gui::gui::Ui;
+
+    for team in frozen.teams.iter() {
+        gui_teams.push(team.name.clone());
+    }
+
+    let mut ui = Ui::new(
+        gui_teams.as_slice(),
+        mjoy_gui::gui::WidthHeight::new(1920, 1080),
+    );
 
     let all_joys = outjoy::Outjoys::new(&frozen);
     loop {
@@ -167,10 +218,13 @@ fn main() {
             _ => {}
         }
 
-        all_joys.update(&outjoy::UpdateContext {
+        all_joys.update(&mut outjoy::UpdateContext {
             gilrs: &mut gilrs,
             event_path_lookup: &joy_lookup,
+            feedback: &mut fbinfo,
         });
+
+        ui.render(&fbinfo);
 
         //if let Some(gilrs::Event { id, event, time }) = event {
         //let gp = gilrs.gamepad(id);

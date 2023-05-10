@@ -42,14 +42,60 @@ impl<'a> Outjoy<'a> {
         Self { team, joy }
     }
 
-    fn update_axes<'b, 'c, 'd>(&'a self, context: &'d UpdateContext<'b, 'c>) {
+    fn inaxis_to_letter(a: &crate::injoy::NamedAxis, f: f32) -> Option<String> {
         use crate::injoy::NamedAxis;
+        match a {
+            NamedAxis::Xright => match f {
+                f if f > 0.1 => Some(">".to_string()),
+                f if f < -0.1 => Some("<".to_string()),
+                _ => None,
+            },
+            NamedAxis::Yup => match f {
+                f if f > 0.1 => Some("^".to_string()),
+                f if f < -0.1 => Some("v".to_string()),
+                _ => None,
+            },
+        }
+    }
+
+    fn inbutton_to_letter(b: &crate::injoy::NamedButton) -> String {
+        use crate::injoy::NamedButton;
+        match b {
+            NamedButton::X => "X".to_string(),
+            NamedButton::A => "A".to_string(),
+            NamedButton::B => "B".to_string(),
+            NamedButton::Y => "Y".to_string(),
+            NamedButton::L => "L".to_string(),
+            NamedButton::R => "R".to_string(),
+            NamedButton::Start => "t".to_string(),
+            NamedButton::Select => "e".to_string(),
+        }
+    }
+
+    fn update_axes<'b, 'c, 'd, 'e, 'f>(&'a self, context: &'d mut UpdateContext<'b, 'c, 'e, 'f>) {
+        use crate::injoy::NamedAxis;
+
+        let mut fb_team = None;
+        for team in context.feedback.teams.iter_mut() {
+            if self.team.name == team.team_name {
+                fb_team = Some(team);
+                break;
+            }
+        }
+
+        let lefties = ["<".to_string(), ">".to_string()];
+        let upies = ["^".to_string(), "v".to_string()];
 
         for (i, inaxis) in crate::injoy::NamedAxis::iter().enumerate() {
             let mut sum = 0 as f32;
             let mut count = 0;
 
             let out_axis = inaxis_to_outaxis(&inaxis);
+
+            let clearem = match inaxis {
+                NamedAxis::Xright => &lefties,
+                NamedAxis::Yup => &upies,
+            };
 
             for (_id, gamepad) in context.gilrs.gamepads() {
                 let devpath = gamepad.devpath();
@@ -84,6 +130,41 @@ impl<'a> Outjoy<'a> {
                     let value = value * scalar.signum();
                     sum += value;
                     count += 1;
+
+                    let letter = Self::inaxis_to_letter(&inaxis, value);
+
+                    let fb_team = match fb_team.as_mut() {
+                        Some(fb_team) => fb_team,
+                        None => continue,
+                    };
+                    let mut player = None;
+                    for p in fb_team.players.iter_mut() {
+                        if &p.player_name == common_name {
+                            player = Some(p);
+                            break;
+                        }
+                    }
+
+                    if player.is_none() {
+                        continue;
+                    }
+                    let player = player.unwrap();
+
+                    for f in player.feedback.0.iter_mut() {
+                        if clearem.contains(&f.button) {
+                            f.state = mjoy_gui::gui::feedback_info::PressState::Unpressed;
+                        }
+                    }
+
+                    if letter.is_none() {
+                        continue;
+                    }
+                    let letter = letter.unwrap();
+                    for f in player.feedback.0.iter_mut() {
+                        if f.button == letter {
+                            f.state = mjoy_gui::gui::feedback_info::PressState::Pressed;
+                        }
+                    }
                 }
             }
 
@@ -92,12 +173,34 @@ impl<'a> Outjoy<'a> {
                 _ => sum / count as f32,
             };
 
+            let letter = Self::inaxis_to_letter(&inaxis, average);
+            let fb_team = match fb_team.as_mut() {
+                Some(fb_team) => fb_team,
+                None => continue,
+            };
+
+            for f in fb_team.feedback.0.iter_mut() {
+                if clearem.contains(&f.button) {
+                    f.state = mjoy_gui::gui::feedback_info::PressState::Unpressed;
+                }
+            }
+
+            if letter.is_none() {
+                continue;
+            }
+            let letter = letter.unwrap();
+            for f in fb_team.feedback.0.iter_mut() {
+                if f.button == letter {
+                    f.state = mjoy_gui::gui::feedback_info::PressState::Pressed;
+                }
+            }
+
             let average = (average * 512f32) as i32;
             self.joy.move_axis(out_axis, average).unwrap();
         }
     }
 
-    fn update_buttons<'b, 'c, 'd>(&'a self, context: &'d UpdateContext<'b, 'c>) {
+    fn update_buttons<'b, 'c, 'd, 'e, 'f>(&'a self, context: &'d UpdateContext<'b, 'c, 'e, 'f>) {
         use crate::injoy::NamedButton;
 
         for (i, inbutton) in crate::injoy::NamedButton::iter().enumerate() {
@@ -145,16 +248,17 @@ impl<'a> Outjoy<'a> {
         }
     }
 
-    pub fn update<'b, 'c, 'd>(&'a self, context: &'d UpdateContext<'b, 'c>) {
+    pub fn update<'b, 'c, 'd, 'e, 'f>(&'a self, context: &'d mut UpdateContext<'b, 'c, 'e, 'f>) {
         self.update_axes(context);
         self.update_buttons(context);
         self.joy.synchronise().unwrap();
     }
 }
 
-pub struct UpdateContext<'b, 'c> {
+pub struct UpdateContext<'b, 'c, 'e, 'f> {
     pub event_path_lookup: &'b joypaths::EventPathLookup,
     pub gilrs: &'c mut gilrs::Gilrs,
+    pub feedback: &'e mut mjoy_gui::gui::feedback_info::FeedbackInfo<'f>,
 }
 
 impl<'a> Outjoys<'a> {
@@ -166,7 +270,7 @@ impl<'a> Outjoys<'a> {
         Self { outjoys }
     }
 
-    pub fn update<'b, 'c, 'd>(&'a self, context: &'d UpdateContext<'b, 'c>) {
+    pub fn update<'b, 'c, 'd, 'e, 'f>(&'a self, context: &'d mut UpdateContext<'b, 'c, 'e, 'f>) {
         for outjoy in self.outjoys.iter() {
             outjoy.update(context);
         }
