@@ -151,7 +151,7 @@ fn main() {
         joypaths::repath_joys(&words, &config).unwrap().into();
 
     use mjoy_gui::gui::feedback_info::FeedbackInfo;
-    let feedback_info = FeedbackInfo::new(&frozen);
+    //let feedback_info = FeedbackInfo::new(&frozen);
 
     let all_joys = outjoy::Outjoys::new(&frozen);
     loop {
