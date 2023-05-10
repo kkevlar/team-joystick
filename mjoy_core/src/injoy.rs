@@ -2,7 +2,7 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 #[derive(Debug, EnumIter)]
-enum NamedButton {
+pub enum NamedButton {
     A,
     B,
     X,
@@ -14,12 +14,12 @@ enum NamedButton {
 }
 
 #[derive(Debug, EnumIter)]
-enum NamedAxis {
+pub enum NamedAxis {
     Xright,
     Yup,
 }
 
-fn snes_namedaxis_to_id_and_scalar(a: &NamedAxis) -> (u32, f32) {
+pub fn snes_namedaxis_to_id_and_scalar(a: &NamedAxis) -> (u32, f32) {
     use NamedAxis::*;
     match a {
         Xright => (0, 32767.0),
@@ -27,16 +27,17 @@ fn snes_namedaxis_to_id_and_scalar(a: &NamedAxis) -> (u32, f32) {
     }
 }
 
-fn snes_namedbutton_to_id(b: &NamedButton) -> u32 {
+pub fn snes_namedbutton_to_id(b: &NamedButton) -> gilrs::Button {
+    use gilrs::Button;
     use NamedButton::*;
     match b {
-        X => 0,
-        A => 1,
-        B => 2,
-        Y => 3,
-        Start => 9,
-        Select => 8,
-        L => 4,
-        R => 5,
+        X => Button::North,
+        A => Button::East,
+        B => Button::South,
+        Y => Button::West,
+        Start => Button::Start,
+        Select => Button::Select,
+        L => Button::LeftTrigger,
+        R => Button::RightTrigger,
     }
 }

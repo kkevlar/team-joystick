@@ -42,7 +42,7 @@ fn main() {
         teams
     };
 
-    let mut gui = gui::Ui::new(&teams.as_slice(), gui::WidthHeight::new(800, 600));
+    let mut gui = gui::Ui::new(&teams.as_slice(), gui::WidthHeight::new(1920, 1080));
 
     let wh = mjoy_gui::wordhash::Wordhash::new(seed, seed);
 

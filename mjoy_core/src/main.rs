@@ -22,14 +22,14 @@ pub struct Config {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct Team {
+pub struct Team {
     name: String,
     players: Vec<String>,
     out_index: u32,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct TeamLock {
+pub struct TeamLock {
     teams: Vec<Team>,
 }
 
@@ -135,6 +135,7 @@ fn main() {
     std::fs::write(frozen_path, frozen_json).unwrap();
 
     use gilrs;
+
     let mut gilrs = gilrs::Gilrs::new().unwrap();
 
     // Iterate over all connected gamepads
@@ -148,9 +149,14 @@ fn main() {
     }
     let mut joy_lookup: joypaths::EventPathLookup =
         joypaths::repath_joys(&words, &config).unwrap().into();
+
+    use mjoy_gui::gui::feedback_info::FeedbackInfo;
+    let feedback_info = FeedbackInfo::new(&frozen);
+
+    let all_joys = outjoy::Outjoys::new(&frozen);
     loop {
-        // Examine new events
         let event = gilrs.next_event();
+
         match &event {
             Some(gilrs::Event {
                 event: gilrs::EventType::Connected | gilrs::EventType::Disconnected,
@@ -161,12 +167,25 @@ fn main() {
             _ => {}
         }
 
-        if let Some(gilrs::Event { id, event, time }) = event {
-            let gp = gilrs.gamepad(id);
-            let devpath = gp.devpath();
-            let common_name = joy_lookup.0[devpath].common_name.clone();
-            println!("{:?} New event from {}: {:?}", time, common_name, event);
-        }
+        all_joys.update(&outjoy::UpdateContext {
+            gilrs: &mut gilrs,
+            event_path_lookup: &joy_lookup,
+        });
+
+        //if let Some(gilrs::Event { id, event, time }) = event {
+        //let gp = gilrs.gamepad(id);
+        //let devpath = gp.devpath();
+        //dbg!(&devpath);
+        //let path = joy_lookup.0.get(devpath);
+        //if path.is_none() {
+        //println!("Unknown device: {:?}", devpath);
+        //continue;
+        //}
+        //let common_name = path.unwrap().common_name.clone();
+        //println!("{:?} New event from {}: {:?}", time, common_name, event);
+
+        //dbg!(gp.button_data(gilrs::Button::DPadRight));
+        //}
     }
 }
 

@@ -1,0 +1,12 @@
+{
+  "teams": [
+    {
+      "name": "Team 1",
+      "players": [
+        "NobleBowser",
+        "CanaryYoshi"
+      ],
+      "out_index": 0
+    }
+  ]
+}
