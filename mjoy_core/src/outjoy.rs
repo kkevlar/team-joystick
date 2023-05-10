@@ -200,8 +200,19 @@ impl<'a> Outjoy<'a> {
         }
     }
 
-    fn update_buttons<'b, 'c, 'd, 'e, 'f>(&'a self, context: &'d UpdateContext<'b, 'c, 'e, 'f>) {
+    fn update_buttons<'b, 'c, 'd, 'e, 'f>(
+        &'a self,
+        context: &'d mut UpdateContext<'b, 'c, 'e, 'f>,
+    ) {
         use crate::injoy::NamedButton;
+
+        let mut fb_team = None;
+        for team in context.feedback.teams.iter_mut() {
+            if self.team.name == team.team_name {
+                fb_team = Some(team);
+                break;
+            }
+        }
 
         for (i, inbutton) in crate::injoy::NamedButton::iter().enumerate() {
             let mut sum = 0 as f32;
@@ -236,6 +247,35 @@ impl<'a> Outjoy<'a> {
 
                     sum += value;
                     count += 1;
+
+                    let fb_team = match fb_team.as_mut() {
+                        Some(fb_team) => fb_team,
+                        None => continue,
+                    };
+                    let mut player = None;
+                    for p in fb_team.players.iter_mut() {
+                        if &p.player_name == common_name {
+                            player = Some(p);
+                            break;
+                        }
+                    }
+
+                    if player.is_none() {
+                        continue;
+                    }
+                    let player = player.unwrap();
+
+                    let letter = Self::inbutton_to_letter(&inbutton);
+                    for f in player.feedback.0.iter_mut() {
+                        if f.button == letter {
+                            let punp = if value > 0.8 {
+                                mjoy_gui::gui::feedback_info::PressState::Pressed
+                            } else {
+                                mjoy_gui::gui::feedback_info::PressState::Unpressed
+                            };
+                            f.state = punp;
+                        }
+                    }
                 }
             }
 
@@ -245,6 +285,23 @@ impl<'a> Outjoy<'a> {
             };
 
             self.joy.button_press(outbutton, average > 0.8f32).unwrap();
+
+            let fb_team = match fb_team.as_mut() {
+                Some(fb_team) => fb_team,
+                None => continue,
+            };
+
+            let letter = Self::inbutton_to_letter(&inbutton);
+            for f in fb_team.feedback.0.iter_mut() {
+                if f.button == letter {
+                    let punp = if average > 0.8 {
+                        mjoy_gui::gui::feedback_info::PressState::Pressed
+                    } else {
+                        mjoy_gui::gui::feedback_info::PressState::Unpressed
+                    };
+                    f.state = punp;
+                }
+            }
         }
     }
 
