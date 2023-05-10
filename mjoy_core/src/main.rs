@@ -214,8 +214,13 @@ fn main() {
                 ..
             }) => {
                 joy_lookup = joypaths::repath_joys(&words, &config).unwrap().into();
+                continue;
             }
             _ => {}
+        }
+
+        if event.is_some() {
+            continue;
         }
 
         all_joys.update(&mut outjoy::UpdateContext {
