@@ -1,0 +1,4 @@
+0x0240000a  0 kevlar-omen tmux
+0x02200003  0 kevlar-omen error enum does not implement std fmt display - Google Search - Chromium
+0x03200018  0 kevlar-omen Dolphin 5.0
+0x03200cbc  0 kevlar-omen Dolphin 5.0 | JIT64 DC | OpenGL | HLE | FPS: 60 - VPS: 60 - 100%

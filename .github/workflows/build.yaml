@@ -4,18 +4,22 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install SDL2
+      - name: Install Udev
         run: |
-          sudo apt install -y libsdl2-dev
+          sudo apt install -y libudev-dev
 
       - name: Build
         run: |
           cargo build
+
+      - name: Test
+        run: |
+          cargo test
 
       - name: Format Check
         run: |

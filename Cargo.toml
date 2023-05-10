@@ -1,15 +1,2 @@
-[package]
-name = "team-joystick-daemon"
-version = "0.3.0"
-authors = ["Kevin Kellar <kellar.kevin@gmail.com>"]
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-sdl2 = "0.35.2"
-strum = "0.11.0"
-strum_macros = "0.11.0"
-software-joystick = { git = "https://github.com/kkevlar/software-joystick.git" }
-clap = { version = "3.0", features = ["derive"] }
-
+[workspace]
+members = ["ui_demo", "mjoy_core"]
