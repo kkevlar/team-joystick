@@ -87,6 +87,6 @@ fn main() {
     };
 
     loop {
-        gui.render(&fb);
+        gui.render(&fb, true);
     }
 }

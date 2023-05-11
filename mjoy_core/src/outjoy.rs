@@ -169,7 +169,10 @@ impl<'a> Outjoy<'a> {
             }
 
             let average = match count {
-                0 => panic!("No players found for team"),
+                0 => {
+                    eprintln!("No players found for team {}", self.team.name);
+                    0 as f32
+                }
                 _ => sum / count as f32,
             };
 
@@ -229,6 +232,10 @@ impl<'a> Outjoy<'a> {
                 let namedpath = namedpath.unwrap();
                 let common_name = &namedpath.common_name;
 
+                if context.stick_only_names.contains(&common_name) {
+                    continue;
+                }
+
                 if self.team.players.contains(&common_name) {
                     let button_id: gilrs::Button = crate::injoy::snes_namedbutton_to_id(&inbutton);
                     let value = gamepad.button_data(button_id);
@@ -268,7 +275,7 @@ impl<'a> Outjoy<'a> {
                     let letter = Self::inbutton_to_letter(&inbutton);
                     for f in player.feedback.0.iter_mut() {
                         if f.button == letter {
-                            let punp = if value > 0.8 {
+                            let punp = if value > context.button_threshold {
                                 mjoy_gui::gui::feedback_info::PressState::Pressed
                             } else {
                                 mjoy_gui::gui::feedback_info::PressState::Unpressed
@@ -280,11 +287,16 @@ impl<'a> Outjoy<'a> {
             }
 
             let average = match count {
-                0 => panic!("No players found for team"),
+                0 => {
+                    eprintln!("No players found for team");
+                    0 as f32
+                }
                 _ => sum / count as f32,
             };
 
-            self.joy.button_press(outbutton, average > 0.8f32).unwrap();
+            self.joy
+                .button_press(outbutton, average > context.button_threshold)
+                .unwrap();
 
             let fb_team = match fb_team.as_mut() {
                 Some(fb_team) => fb_team,
@@ -294,7 +306,7 @@ impl<'a> Outjoy<'a> {
             let letter = Self::inbutton_to_letter(&inbutton);
             for f in fb_team.feedback.0.iter_mut() {
                 if f.button == letter {
-                    let punp = if average > 0.8 {
+                    let punp = if average > context.button_threshold {
                         mjoy_gui::gui::feedback_info::PressState::Pressed
                     } else {
                         mjoy_gui::gui::feedback_info::PressState::Unpressed
@@ -316,6 +328,8 @@ pub struct UpdateContext<'b, 'c, 'e, 'f> {
     pub event_path_lookup: &'b joypaths::EventPathLookup,
     pub gilrs: &'c mut gilrs::Gilrs,
     pub feedback: &'e mut mjoy_gui::gui::feedback_info::FeedbackInfo<'f>,
+    pub stick_only_names: &'b Vec<String>,
+    pub button_threshold: f32,
 }
 
 impl<'a> Outjoys<'a> {

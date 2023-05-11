@@ -3,6 +3,7 @@ mod joypaths;
 mod outjoy;
 
 use clap::Parser;
+use rand;
 use serde::{Deserialize, Serialize};
 
 #[derive(Parser)]
@@ -205,6 +206,9 @@ fn main() {
     );
 
     let all_joys = outjoy::Outjoys::new(&frozen);
+    let mut thresh = 0.9f32;
+    let mut change_thresh_time = std::time::Instant::now() + std::time::Duration::from_secs(1);
+    let mut gui_render_time = std::time::Instant::now();
     loop {
         let event = gilrs.next_event();
 
@@ -227,9 +231,38 @@ fn main() {
             gilrs: &mut gilrs,
             event_path_lookup: &joy_lookup,
             feedback: &mut fbinfo,
+            stick_only_names: &config.hat_only_players,
+            button_threshold: thresh,
         });
 
-        ui.render(&fbinfo);
+        if std::time::Instant::now()
+            .checked_duration_since(gui_render_time)
+            .is_some()
+        {
+            gui_render_time = std::time::Instant::now() + std::time::Duration::from_millis(50);
+            ui.render(&fbinfo, false);
+        } else {
+            continue;
+        }
+
+        let now = std::time::Instant::now();
+        if now.checked_duration_since(change_thresh_time).is_some() {
+            change_thresh_time = change_thresh_time + {
+                // Random number up to 3000
+                let random_millis = rand::random::<u64>() % 3000;
+                let random_millis = random_millis + 300;
+                std::time::Duration::from_millis(random_millis)
+            };
+            thresh = {
+                let rand = rand::random::<u64>();
+                let rand = rand % 10000;
+                let rand = rand as f32;
+                let rand = rand / 10000.0;
+                let mut rand = rand * 0.67;
+                rand += 0.30;
+                rand
+            };
+        }
 
         //if let Some(gilrs::Event { id, event, time }) = event {
         //let gp = gilrs.gamepad(id);

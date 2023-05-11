@@ -16,4 +16,5 @@ serde = {version = "1.0.160", features = ["derive"]}
 serde_json = "1.0.96"
 mjoy_gui = {path = "../mjoy_gui"}
 regex = "1.5.4"
+rand = "0.8.5"
 

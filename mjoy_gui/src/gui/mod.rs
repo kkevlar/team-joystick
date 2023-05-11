@@ -75,6 +75,7 @@ struct DrawTextInfo<'a> {
     color_index: usize,
     text: &'a str,
     sub: SubtextInfo,
+    color_override: bool,
 }
 
 const TEXTURE_SIZE: f32 = 220f32;
@@ -125,7 +126,11 @@ impl Ui {
         ui
     }
 
-    pub fn render(&mut self, feedback: &FeedbackInfo) {
+    pub fn render(&mut self, feedback: &FeedbackInfo, show_logos: bool) {
+        self.logos
+            .iter_mut()
+            .for_each(|l| l.set_visible(show_logos));
+
         for (i, team) in feedback.teams.iter().enumerate() {
             let color_idx = self
                 .colors
@@ -141,8 +146,11 @@ impl Ui {
                 color_index: color_idx,
                 text: &team.team_name,
                 sub: SubtextInfo::Myself,
+                color_override: !show_logos,
             };
-            self.draw_text(&draw_text_info);
+            if show_logos {
+                self.draw_text(&draw_text_info);
+            }
             for (i, fb) in team.feedback.0.iter().enumerate() {
                 if fb.state == feedback_info::PressState::Unpressed {
                     continue;
@@ -235,6 +243,11 @@ impl Ui {
                 Team => 1f32,
                 Player(_) => 0.9f32,
             };
+        let mut color = color;
+
+        if info.color_override {
+            color = kiss3d::nalgebra::Vector3::new(1f32, 1f32, 1f32).into();
+        }
 
         self.window.draw_text(
             info.text,

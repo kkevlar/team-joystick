@@ -1,32 +1,32 @@
 {
   "teams": [
     {
-      "name": "Organic YardGoats",
+      "name": "Grey Wolves",
       "players": [
-        "HotLuigi",
-        "BabyHammerBro"
+        "BabyBike",
+        "WhiteRosalina"
       ],
       "out_index": 0
     },
     {
-      "name": "Dark Musketeers",
+      "name": "Green Griffins",
       "players": [
-        "DustyChomp"
+        "HotPeach"
       ],
       "out_index": 1
     },
     {
-      "name": "Cursed Crunch",
+      "name": "Bunny Phantoms",
       "players": [
-        "LuckyToad"
+        "ElementalEgg"
       ],
       "out_index": 2
     },
     {
-      "name": "Shy Giants",
+      "name": "Curvy Rhinos",
       "players": [
-        "ReveredYoshi",
-        "OliveMushroom"
+        "GlassToad",
+        "NobleYoshi"
       ],
       "out_index": 3
     }
