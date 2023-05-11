@@ -1,6 +1,8 @@
 use kiss3d::light::Light;
 use kiss3d::window::Window;
 
+use crate::manipulate_emulator;
+
 use self::feedback_info::FeedbackInfo;
 pub mod feedback_info;
 mod team_color;
@@ -23,6 +25,8 @@ pub struct Ui {
     logos_locations: Vec<kiss3d::nalgebra::Translation2<f32>>,
     font: std::rc::Rc<kiss3d::text::Font>,
     colors: team_color::ColoredTeams,
+    did_gui_off: bool,
+    did_gui_on: bool,
 }
 
 pub struct WidthHeight {
@@ -122,11 +126,25 @@ impl Ui {
             colors,
             font: kiss3d::text::Font::new(std::path::Path::new("./resources/impact.ttf")).unwrap(),
             width_height,
+            did_gui_on: false,
+            did_gui_off: false,
         };
         ui
     }
 
     pub fn render(&mut self, feedback: &FeedbackInfo, show_logos: bool) {
+        if show_logos && !self.did_gui_on {
+            manipulate_emulator::mute::unmute("dolphin-emu");
+            self.did_gui_on = true;
+        }
+        if !show_logos && !self.did_gui_off {
+            manipulate_emulator::resize::resize_and_focus_matching(
+                &regex::Regex::new("Dolphin.*FPS").unwrap(),
+            );
+            manipulate_emulator::mute::mute("dolphin-emu");
+            self.did_gui_off = true;
+        }
+
         self.logos
             .iter_mut()
             .for_each(|l| l.set_visible(show_logos));

@@ -1,8 +1,8 @@
 {
     "team_allocation": [2],
-    "path_hash_salt": 10026,
+    "path_hash_salt": 10027,
     "path_common_name_max_length": 12,
-    "team_hash_salt": 20004,
+    "team_hash_salt": 20005,
     "hat_only_players": [],
     "number_of_multi_port_controllers_to_use": 1
 }

@@ -175,6 +175,8 @@ impl<'a> Outjoy<'a> {
                 }
                 _ => sum / count as f32,
             };
+            let average_i = (average * 512f32) as i32;
+            self.joy.move_axis(out_axis, average_i).unwrap();
 
             let letter = Self::inaxis_to_letter(&inaxis, average);
             let fb_team = match fb_team.as_mut() {
@@ -197,9 +199,6 @@ impl<'a> Outjoy<'a> {
                     f.state = mjoy_gui::gui::feedback_info::PressState::Pressed;
                 }
             }
-
-            let average = (average * 512f32) as i32;
-            self.joy.move_axis(out_axis, average).unwrap();
         }
     }
 
