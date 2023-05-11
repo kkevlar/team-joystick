@@ -1,8 +1,8 @@
 {
-    "team_allocation": [2, 1, 1, 2],
-    "path_hash_salt": 10025,
-    "path_common_name_max_length": 13,
-    "team_hash_salt": 20003,
-    "hat_only_players": ["BabyBike"],
+    "team_allocation": [2],
+    "path_hash_salt": 10026,
+    "path_common_name_max_length": 12,
+    "team_hash_salt": 20004,
+    "hat_only_players": [],
     "number_of_multi_port_controllers_to_use": 1
 }

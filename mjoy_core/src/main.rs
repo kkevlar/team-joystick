@@ -209,6 +209,7 @@ fn main() {
     let mut thresh = 0.9f32;
     let mut change_thresh_time = std::time::Instant::now() + std::time::Duration::from_secs(1);
     let mut gui_render_time = std::time::Instant::now();
+    let mut started = false;
     loop {
         let event = gilrs.next_event();
 
@@ -240,7 +241,54 @@ fn main() {
             .is_some()
         {
             gui_render_time = std::time::Instant::now() + std::time::Duration::from_millis(50);
-            ui.render(&fbinfo, false);
+            ui.render(&fbinfo, started);
+
+            if !started {
+                let mut should_start = true;
+                for (i, joystick) in gilrs.gamepads() {
+                    let devpath = joystick.devpath();
+                    let common_name = match &joy_lookup.0.get(devpath) {
+                        Some(name) => &name.common_name,
+                        None => {
+                            continue;
+                        }
+                    };
+                    for team in frozen.teams.iter() {
+                        if !should_start {
+                            break;
+                        }
+
+                        for player in team.players.iter() {
+                            if player == common_name {
+                                match joystick.button_data(gilrs::Button::West) {
+                                    Some(btn) => {
+                                        if !btn.is_pressed() {
+                                            should_start = false;
+                                        }
+                                    }
+                                    None => {
+                                        should_start = false;
+                                    }
+                                }
+                                match joystick.button_data(gilrs::Button::DPadRight) {
+                                    Some(btn) => {
+                                        if !(btn.value() < 0.1f32) {
+                                            should_start = false;
+                                        }
+                                    }
+                                    None => {
+                                        should_start = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if should_start {
+                    started = true;
+                }
+            }
         } else {
             continue;
         }

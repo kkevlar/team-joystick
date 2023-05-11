@@ -1,34 +1,12 @@
 {
   "teams": [
     {
-      "name": "Grey Wolves",
+      "name": "Lime Jesters",
       "players": [
-        "BabyBike",
-        "WhiteRosalina"
+        "StudLuigi",
+        "EtherealToad"
       ],
       "out_index": 0
-    },
-    {
-      "name": "Green Griffins",
-      "players": [
-        "HotPeach"
-      ],
-      "out_index": 1
-    },
-    {
-      "name": "Bunny Phantoms",
-      "players": [
-        "ElementalEgg"
-      ],
-      "out_index": 2
-    },
-    {
-      "name": "Curvy Rhinos",
-      "players": [
-        "GlassToad",
-        "NobleYoshi"
-      ],
-      "out_index": 3
     }
   ]
 }
