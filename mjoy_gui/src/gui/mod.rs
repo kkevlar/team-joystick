@@ -100,9 +100,9 @@ impl Ui {
         for (i, team) in teams.iter().enumerate() {
             let mut r = window.add_rectangle(texture_size.x(), texture_size.y());
             let translate = &kiss3d::nalgebra::Translation2::new(
-                texture_position.x() * if i < 2 { -1 } else { 1 } as f32
+                texture_position.x() * if i % 2 == 0 { -1 } else { 1 } as f32
                     + texture_position_bonus.x(),
-                texture_position.y() * if i % 2 == 0 { 1 } else { -1 } as f32
+                texture_position.y() * if i < 2 { 1 } else { -1 } as f32
                     + texture_position_bonus.y(),
             );
             r.append_translation(translate);
@@ -134,13 +134,13 @@ impl Ui {
 
     pub fn render(&mut self, feedback: &FeedbackInfo, show_logos: bool) {
         if show_logos && !self.did_gui_on {
+            manipulate_emulator::resize::resize_and_focus_matching(
+                &regex::Regex::new("Dolphin.*FPS").unwrap(),
+            );
             manipulate_emulator::mute::unmute("dolphin-emu");
             self.did_gui_on = true;
         }
         if !show_logos && !self.did_gui_off {
-            manipulate_emulator::resize::resize_and_focus_matching(
-                &regex::Regex::new("Dolphin.*FPS").unwrap(),
-            );
             manipulate_emulator::mute::mute("dolphin-emu");
             self.did_gui_off = true;
         }
@@ -168,15 +168,15 @@ impl Ui {
             };
             if show_logos {
                 self.draw_text(&draw_text_info);
-            }
-            for (i, fb) in team.feedback.0.iter().enumerate() {
-                if fb.state == feedback_info::PressState::Unpressed {
-                    continue;
-                }
+                for (i, fb) in team.feedback.0.iter().enumerate() {
+                    if fb.state == feedback_info::PressState::Unpressed {
+                        continue;
+                    }
 
-                draw_text_info.text = &fb.button;
-                draw_text_info.sub = SubtextInfo::Button(i as i32);
-                self.draw_text(&draw_text_info);
+                    draw_text_info.text = &fb.button;
+                    draw_text_info.sub = SubtextInfo::Button(i as i32);
+                    self.draw_text(&draw_text_info);
+                }
             }
 
             for (i, player) in team.players.iter().enumerate() {
@@ -254,7 +254,7 @@ impl Ui {
         let color = color
             * match info.sub {
                 SubtextInfo::Myself => 1f32,
-                SubtextInfo::Button(_) => 0.6f32,
+                SubtextInfo::Button(_) => 0.9f32,
             };
         let color = color
             * match info.team_or_player {

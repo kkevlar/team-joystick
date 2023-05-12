@@ -296,8 +296,8 @@ fn main() {
         let now = std::time::Instant::now();
         if now.checked_duration_since(change_thresh_time).is_some() {
             change_thresh_time = change_thresh_time + {
-                // Random number up to 3000
-                let random_millis = rand::random::<u64>() % 3000;
+                // Random number up to 5000
+                let random_millis = rand::random::<u64>() % 5000;
                 let random_millis = random_millis + 300;
                 std::time::Duration::from_millis(random_millis)
             };
@@ -306,9 +306,9 @@ fn main() {
                 let rand = rand % 10000;
                 let rand = rand as f32;
                 let rand = rand / 10000.0;
-                let mut rand = rand * 0.67;
-                rand += 0.30;
-                rand
+                let mut rand = rand * 0.61;
+                rand += 0.49;
+                rand.min(0.95f32)
             };
         }
 
