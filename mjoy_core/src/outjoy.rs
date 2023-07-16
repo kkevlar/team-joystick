@@ -175,6 +175,9 @@ impl<'a> Outjoy<'a> {
                 }
                 _ => sum / count as f32,
             };
+            let average = average.clamp(-1.0f32, 1.0f32);
+            let pow = average.abs().powf(2.0f32);
+            let average = average.signum() * pow;
             let average_i = (average * 512f32) as i32;
             self.joy.move_axis(out_axis, average_i).unwrap();
 
